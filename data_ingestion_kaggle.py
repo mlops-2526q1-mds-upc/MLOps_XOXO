@@ -1,9 +1,8 @@
-import shutil
 import os
-import random
+import shutil
 import time
-import subprocess
-from dotenv import load_dotenv, find_dotenv
+from tqdm import tqdm
+from kaggle.api.kaggle_api_extended import KaggleApi
 
 # ----------------------------------------------------
 # Configuration
@@ -16,58 +15,88 @@ temp_dir = "temp_dataset"
 dataset_dir = "images_dataset"
 
 # Percentage of images to sample
-sample_pct = 0.30 
+sample_pct = 0.30
 
 # Mapillary Vistas v2.0 dataset splits
 dataset_splits = ["training", "validation"]
 
 # ----------------------------------------------------
-# Image Dataset API Download and Removal of unnecessary files
+# Image Dataset API Download and Cleanup
 # ----------------------------------------------------
 
-def download_and_extract(temp_dir, dataset_splits):
-    """
-    Downloads datasets using the Mapillary Tools SDK and performs cleanup.
-    """
-    print("Starting dataset download using Mapillary SDK...")
     
-    # Ensure a temporary directory exists
-    os.makedirs(temp_dir, exist_ok=True)
-    
-    for split_name in dataset_splits:
-        print(f"Downloading {split_name} split...")
-        try:
-            # Use subprocess to call the Mapillary SDK download command
-            subprocess.run(
-                ["mapillary_tools", "download", "--dataset_name", "vistas", "--version", "2.0", "--split", split_name, "--output_path", temp_dir],
-                check=True
-            )
-            print(f"Download of {split_name} successful.")
-
-        except subprocess.CalledProcessError as e:
-            print(f"Error downloading {split_name} dataset with SDK: {e}")
-            print("Please ensure the Mapillary Tools SDK is installed and authenticated.")
-            exit()
-            
-        # The SDK downloads and extracts, so now we can proceed to cleanup
-        cleanup_files(split_name, temp_dir)
-        time.sleep(1)
-
-def cleanup_files(split_name, temp_dir):
+def download_dataset():
     """
-    Performs file deletions - deleting unnecessary duplicate v1.2 version files
-    and panoptic .png files
+    Automates the download of the Mapillary Vistas dataset from Kaggle
+    and displays a progress bar.
+    """
+    print("Downloading dataset...")
+    
+    dataset_slug = 'kaggleprollc/mapillary-vistas-image-data-collection'
+    download_path = './temp_dataset'
+    
+    # Ensure the download path is clean before starting
+    if os.path.exists(download_path):
+        shutil.rmtree(download_path)
+    os.makedirs(download_path)
+
+    api = KaggleApi()
+    api.authenticate()
+
+    # Define the path for the downloaded zip file
+    zip_filename = 'mapillary-vistas-image-data-collection.zip'
+    zip_filepath = os.path.join(download_path, zip_filename)
+
+    estimated_total_size = 32.26 * 1024 * 1024 * 1024  # 32.26 GB in bytes
+
+    try:
+        # Start the download and get the response object
+        response = api.dataset_download_files(dataset_slug, path=download_path, quiet=True)
+        
+        # Monitor the download progress manually
+        with tqdm(total=estimated_total_size, unit='B', unit_scale=True, desc="Downloading") as pbar:
+            last_size = 0
+            while not os.path.exists(zip_filepath) or os.path.getsize(zip_filepath) < estimated_total_size:
+                if os.path.exists(zip_filepath):
+                    current_size = os.path.getsize(zip_filepath)
+                    pbar.update(current_size - last_size)
+                    last_size = current_size
+                    
+                    if current_size >= estimated_total_size:
+                        break
+                time.sleep(5) # Check progress every 5 seconds
+        
+        print("Download complete.")
+        
+        # After download, unzip the files
+        print("Unzipping files...")
+        shutil.unpack_archive(zip_filepath, download_path)
+        os.remove(zip_filepath)  # Clean up the zip file
+        print("Unzipping complete.")
+        
+        # Return the path to the extracted dataset
+        extracted_path = os.path.join(download_path, 'mapillary-vistas-image-data-collection')
+        return extracted_path
+
+    except Exception as e:
+        print(f"Error downloading dataset: {e}")
+        print("Please ensure the Kaggle CLI is installed and configured correctly with your API key.")
+        return None
+
+def cleanup_files(dataset_splits, base_path):
+    """
+    Performs file deletions on the downloaded dataset to remove unnecessary files.
     """
     print(f"Cleaning up {split_name} data...")
 
-    # Delete the entire v1.2 folder
-    v1_2_dir = os.path.join(temp_dir, split_name, "v1.2")
+    # Delete the v1.2 folder
+    v1_2_dir = os.path.join(base_path, split_name, "v1.2")
     if os.path.exists(v1_2_dir):
         shutil.rmtree(v1_2_dir)
         print(f"Deleted: {v1_2_dir}")
 
     # Delete all files in v2.0/panoptic except panoptic_2020.json
-    panoptic_dir = os.path.join(temp_dir, split_name, "v2.0", "panoptic")
+    panoptic_dir = os.path.join(base_path, split_name, "v2.0", "panoptic")
     if os.path.exists(panoptic_dir):
         files_to_delete = [f for f in os.listdir(panoptic_dir) if f != "panoptic_2020.json"]
         for filename in files_to_delete:
@@ -76,37 +105,26 @@ def cleanup_files(split_name, temp_dir):
     else:
         print(f"Warning: 'panoptic' folder not found in '{split_name}'.")
 
-    print(f"Cleaning up '{split_name}' temporary data...")
-
 # ----------------------------------------------------
 # Creating smaller dataset
 # ----------------------------------------------------
 
-def create_dataset_subset():
+def create_dataset_subset(dataset_path, dataset_dir, sample_pct, dataset_splits):
     """
-    Samples a smaller dataset and copies files to the new directory structure.
+    Creates a smaller dataset and copies files to the new directory structure.
     """
     print("\nStarting the data ingestion and sampling process.")
 
-    # Download and extract the full dataset 
-    print("\nDownloading and extracting the full dataset")
-    os.makedirs(temp_dir, exist_ok=True)
-    for split_name, url in dataset_urls.items():
-        archive_path = os.path.join(temp_dir, f"{split_name}.tar.gz")
-        download_and_extract(url, archive_path, temp_dir)
-        time.sleep(1)
-        cleanup_files(split_name)
-
-    # Define the source and destination paths based on the new structure (for training and validation)
-    for split_name in dataset_urls.keys():
+    # Define the source and destination paths based on the new structure
+    for split_name in dataset_splits:
         print(f"Processing the '{split_name}' split...")
 
         # Define the source paths within the temporary directory
-        source_images_dir = os.path.join(temp_dir, split_name, "images")
-        source_labels_dir = os.path.join(temp_dir, split_name, "v2.0", "labels")
-        source_instances_dir = os.path.join(temp_dir, split_name, "v2.0", "instances")
-        source_polygons_dir = os.path.join(temp_dir, split_name, "v2.0", "polygons")
-        
+        source_images_dir = os.path.join(dataset_path, split_name, "images")
+        source_labels_dir = os.path.join(dataset_path, split_name, "v2.0", "labels")
+        source_instances_dir = os.path.join(dataset_path, split_name, "v2.0", "instances")
+        source_polygons_dir = os.path.join(dataset_path, split_name, "v2.0", "polygons")
+
         # Define the destination paths of the new directory structure
         dest_split_dir = os.path.join(dataset_dir, split_name)
         dest_images_dir = os.path.join(dest_split_dir, "images")
@@ -119,7 +137,7 @@ def create_dataset_subset():
         os.makedirs(dest_labels_dir, exist_ok=True)
         os.makedirs(dest_instances_dir, exist_ok=True)
         os.makedirs(dest_polygons_dir, exist_ok=True)
-        
+
         # Get a list of all image filenames for this split
         try:
             image_filenames = [f for f in os.listdir(source_images_dir) if f.endswith('.jpg')]
@@ -127,32 +145,32 @@ def create_dataset_subset():
             print(f"Warning: The images folder for '{split_name}' was not found. Skipping.")
             continue
 
-        # Get the number of image for smaller dataset
+        # Get the number of images for the smaller dataset
         total_images = len(image_filenames)
         num_to_sample = int(total_images * sample_pct)
 
         print(f"Total images found: {total_images}")
         print(f"Sampling {num_to_sample} images...")
-        
+
         if num_to_sample == 0 and total_images > 0:
             num_to_sample = 1
             print("Note: Sample size is less than 1. Sampling 1 image.")
-            
+
         if total_images == 0:
             print("No images to sample. Skipping.")
             continue
-        
-        # Get the new images from original dataset
+
+        # Get the new images from the original dataset
         sampled_images = random.sample(image_filenames, num_to_sample)
         copied_count = 0
 
         # Copy the panoptic and config files to the destination
-        source_panoptic_path = os.path.join(temp_dir, split_name, "v2.0", "panoptic", "panoptic_2020.json")
+        source_panoptic_path = os.path.join(dataset_path, split_name, "v2.0", "panoptic", "panoptic_2020.json")
         if os.path.exists(source_panoptic_path):
             shutil.copy(source_panoptic_path, dest_split_dir)
             print("Copied panoptic_2020.json")
 
-        source_config_path = os.path.join(temp_dir, split_name, "v2.0", "config_v2.0.json")
+        source_config_path = os.path.join(dataset_path, split_name, "v2.0", "config_v2.0.json")
         if os.path.exists(source_config_path):
             shutil.copy(source_config_path, dest_split_dir)
             print("Copied config_v2.0.json")
@@ -167,14 +185,15 @@ def create_dataset_subset():
                 "instance": os.path.join(source_instances_dir, f"{base_name}.png"),
                 "polygon": os.path.join(source_polygons_dir, f"{base_name}.json")
             }
-            
+
             dest_paths = {
                 "image": os.path.join(dest_images_dir, image_filename),
                 "label": os.path.join(dest_labels_dir, f"{base_name}.png"),
                 "instance": os.path.join(dest_instances_dir, f"{base_name}.png"),
                 "polygon": os.path.join(dest_polygons_dir, f"{base_name}.json")
             }
-            
+
+            # Check if all source files exist before copying
             if all(os.path.exists(p) for p in source_paths.values()):
                 for file_type, source_path in source_paths.items():
                     shutil.copy(source_path, dest_paths[file_type])
@@ -197,14 +216,19 @@ def final_cleanup(temp_dir):
 
 # MAIN
 if __name__ == "__main__":
-    """ Main function to orchestrate the data ingestion pipeline. """
     print("Starting the data ingestion and sampling process.")
 
-    # Load environment variables from .env file
-    load_dotenv(find_dotenv())
-    
-    download_and_extract(temp_dir, dataset_splits)
-    create_dataset_subset(temp_dir, dataset_dir, sample_pct, dataset_splits)
+    # Download the full dataset via Kaggle API
+    dataset_path = download_dataset()
+
+    # Perform initial cleanup of the downloaded data
+    for split_name in dataset_splits:
+        cleanup_files(split_name, dataset_path)
+
+    # Create a smaller, processed dataset
+    create_dataset_subset(dataset_path, dataset_dir, sample_pct, dataset_splits)
+
+    # Remove the temporary full dataset
     final_cleanup(temp_dir)
-    
+
     print(f"\nAll steps completed. The processed dataset is located in the '{dataset_dir}' folder.")
