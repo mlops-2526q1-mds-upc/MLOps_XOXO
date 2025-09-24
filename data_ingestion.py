@@ -1,210 +1,119 @@
-import shutil
 import os
+import shutil
 import random
-import time
-import subprocess
-from dotenv import load_dotenv, find_dotenv
+import gdown
+import json
 
 # ----------------------------------------------------
 # Configuration
 # ----------------------------------------------------
 
-# The temporary directory to download and extract the full dataset
-temp_dir = "temp_dataset"
+# Google Drive folder ID
+folder_id = '13rTd4Do3jacWSFW6m8y7LpirNxYli-YW'
 
-# New directory for processed images dataset
-dataset_dir = "images_dataset"
-
-# Percentage of images to sample
-sample_pct = 0.30 
-
-# Mapillary Vistas v2.0 dataset splits
-dataset_splits = ["training", "validation"]
+# Downloaded dataset
+final_dataset_dir = "final_dataset"
 
 # ----------------------------------------------------
-# Image Dataset API Download and Removal of unnecessary files
+# Download the dataset from Google Drive
 # ----------------------------------------------------
 
-def download_and_extract(temp_dir, dataset_splits):
+def download_dataset(folder_id, download_dir):
     """
-    Downloads datasets using the Mapillary Tools SDK and performs cleanup.
-    """
-    print("Starting dataset download using Mapillary SDK...")
+    Downloads a folder from Google Drive into the specified directory.
     
-    # Ensure a temporary directory exists
-    os.makedirs(temp_dir, exist_ok=True)
+    Args:
+        folder_id (str): The Google Drive folder ID.
+        download_dir (str): The local path where the folder will be downloaded.
     
-    for split_name in dataset_splits:
-        print(f"Downloading {split_name} split...")
-        try:
-            # Use subprocess to call the Mapillary SDK download command
-            subprocess.run(
-                ["mapillary_tools", "download", "--dataset_name", "vistas", "--version", "2.0", "--split", split_name, "--output_path", temp_dir],
-                check=True
-            )
-            print(f"Download of {split_name} successful.")
-
-        except subprocess.CalledProcessError as e:
-            print(f"Error downloading {split_name} dataset with SDK: {e}")
-            print("Please ensure the Mapillary Tools SDK is installed and authenticated.")
-            exit()
-            
-        # The SDK downloads and extracts, so now we can proceed to cleanup
-        cleanup_files(split_name, temp_dir)
-        time.sleep(1)
-
-def cleanup_files(split_name, temp_dir):
+    Returns:
+        str: The path to the downloaded content, or None if the download fails.
     """
-    Performs file deletions - deleting unnecessary duplicate v1.2 version files
-    and panoptic .png files
-    """
-    print(f"Cleaning up {split_name} data...")
-
-    # Delete the entire v1.2 folder
-    v1_2_dir = os.path.join(temp_dir, split_name, "v1.2")
-    if os.path.exists(v1_2_dir):
-        shutil.rmtree(v1_2_dir)
-        print(f"Deleted: {v1_2_dir}")
-
-    # Delete all files in v2.0/panoptic except panoptic_2020.json
-    panoptic_dir = os.path.join(temp_dir, split_name, "v2.0", "panoptic")
-    if os.path.exists(panoptic_dir):
-        files_to_delete = [f for f in os.listdir(panoptic_dir) if f != "panoptic_2020.json"]
-        for filename in files_to_delete:
-            os.remove(os.path.join(panoptic_dir, filename))
-        print(f"Cleaned out all but 'panoptic_2020.json' from {panoptic_dir}")
-    else:
-        print(f"Warning: 'panoptic' folder not found in '{split_name}'.")
-
-    print(f"Cleaning up '{split_name}' temporary data...")
-
-# ----------------------------------------------------
-# Creating smaller dataset
-# ----------------------------------------------------
-
-def create_dataset_subset():
-    """
-    Samples a smaller dataset and copies files to the new directory structure.
-    """
-    print("\nStarting the data ingestion and sampling process.")
-
-    # Download and extract the full dataset 
-    print("\nDownloading and extracting the full dataset")
-    os.makedirs(temp_dir, exist_ok=True)
-    for split_name, url in dataset_urls.items():
-        archive_path = os.path.join(temp_dir, f"{split_name}.tar.gz")
-        download_and_extract(url, archive_path, temp_dir)
-        time.sleep(1)
-        cleanup_files(split_name)
-
-    # Define the source and destination paths based on the new structure (for training and validation)
-    for split_name in dataset_urls.keys():
-        print(f"Processing the '{split_name}' split...")
-
-        # Define the source paths within the temporary directory
-        source_images_dir = os.path.join(temp_dir, split_name, "images")
-        source_labels_dir = os.path.join(temp_dir, split_name, "v2.0", "labels")
-        source_instances_dir = os.path.join(temp_dir, split_name, "v2.0", "instances")
-        source_polygons_dir = os.path.join(temp_dir, split_name, "v2.0", "polygons")
+    print("Starting the dataset download...")
+    
+    # Ensure the output directory is clean
+    if os.path.exists(download_dir):
+        shutil.rmtree(download_dir)
+    os.makedirs(download_dir)
+    
+    try:
+        # Downloads the entire folder to the temporary directory
+        gdown.download_folder(id=folder_id, output=download_dir, quiet=False)
+        print("Download complete.")
         
-        # Define the destination paths of the new directory structure
-        dest_split_dir = os.path.join(dataset_dir, split_name)
-        dest_images_dir = os.path.join(dest_split_dir, "images")
-        dest_labels_dir = os.path.join(dest_split_dir, "labels")
-        dest_instances_dir = os.path.join(dest_split_dir, "instances")
-        dest_polygons_dir = os.path.join(dest_split_dir, "polygons")
+        # gdown downloads the folder's contents, and we need to find the correct path.
+        # We assume the content is in a subfolder named like the folder ID.
+        downloaded_content_path = os.path.join(download_dir, folder_id)
 
-        # Create the destination folders
-        os.makedirs(dest_images_dir, exist_ok=True)
-        os.makedirs(dest_labels_dir, exist_ok=True)
-        os.makedirs(dest_instances_dir, exist_ok=True)
-        os.makedirs(dest_polygons_dir, exist_ok=True)
-        
-        # Get a list of all image filenames for this split
-        try:
-            image_filenames = [f for f in os.listdir(source_images_dir) if f.endswith('.jpg')]
-        except FileNotFoundError:
-            print(f"Warning: The images folder for '{split_name}' was not found. Skipping.")
-            continue
-
-        # Get the number of image for smaller dataset
-        total_images = len(image_filenames)
-        num_to_sample = int(total_images * sample_pct)
-
-        print(f"Total images found: {total_images}")
-        print(f"Sampling {num_to_sample} images...")
-        
-        if num_to_sample == 0 and total_images > 0:
-            num_to_sample = 1
-            print("Note: Sample size is less than 1. Sampling 1 image.")
-            
-        if total_images == 0:
-            print("No images to sample. Skipping.")
-            continue
-        
-        # Get the new images from original dataset
-        sampled_images = random.sample(image_filenames, num_to_sample)
-        copied_count = 0
-
-        # Copy the panoptic and config files to the destination
-        source_panoptic_path = os.path.join(temp_dir, split_name, "v2.0", "panoptic", "panoptic_2020.json")
-        if os.path.exists(source_panoptic_path):
-            shutil.copy(source_panoptic_path, dest_split_dir)
-            print("Copied panoptic_2020.json")
-
-        source_config_path = os.path.join(temp_dir, split_name, "v2.0", "config_v2.0.json")
-        if os.path.exists(source_config_path):
-            shutil.copy(source_config_path, dest_split_dir)
-            print("Copied config_v2.0.json")
-
-        # Keep the sampled dataset files
-        for image_filename in sampled_images:
-            base_name = os.path.splitext(image_filename)[0]
-
-            source_paths = {
-                "image": os.path.join(source_images_dir, image_filename),
-                "label": os.path.join(source_labels_dir, f"{base_name}.png"),
-                "instance": os.path.join(source_instances_dir, f"{base_name}.png"),
-                "polygon": os.path.join(source_polygons_dir, f"{base_name}.json")
-            }
-            
-            dest_paths = {
-                "image": os.path.join(dest_images_dir, image_filename),
-                "label": os.path.join(dest_labels_dir, f"{base_name}.png"),
-                "instance": os.path.join(dest_instances_dir, f"{base_name}.png"),
-                "polygon": os.path.join(dest_polygons_dir, f"{base_name}.json")
-            }
-            
-            if all(os.path.exists(p) for p in source_paths.values()):
-                for file_type, source_path in source_paths.items():
-                    shutil.copy(source_path, dest_paths[file_type])
-                copied_count += 1
+        if not os.path.exists(downloaded_content_path):
+            # Fallback in case gdown names the folder differently
+            subdirs = [d for d in os.listdir(download_dir) if os.path.isdir(os.path.join(download_dir, d))]
+            if subdirs:
+                downloaded_content_path = os.path.join(download_dir, subdirs[0])
             else:
-                print(f"Warning: Missing a file for '{image_filename}'. Skipping.")
+                print("Error: Downloaded content not found.")
+                return None
 
-        print(f"Completed '{split_name}' split. Copied {copied_count} images.")
-
+        return downloaded_content_path
+    
+    except Exception as e:
+        print(f"Error downloading dataset: {e}")
+        return None
+    
 # ----------------------------------------------------
-# Final cleanup
+# Clean the dataset
 # ----------------------------------------------------
 
-def final_cleanup(temp_dir):
-    """ Removes the temporary dataset directory. """
-    print("\nFinal cleanup...")
-    shutil.rmtree(temp_dir, ignore_errors=True)
-    print(f"Successfully removed temporary directory: {temp_dir}")
+def cleanup_dataset(base_dir):
+    """
+    Restructures the dataset by moving files from 'v2.0' subfolders up one level
+    and removing unnecessary files.
+    
+    Args:
+        base_dir (str): The path to the root dataset directory to clean.
+    """
+    print("\nStarting dataset cleanup and restructuring...")
+    
+    splits = ["training", "validation"]
+
+    for split in splits:
+        print(f"Processing '{split}' data...")
+        split_path = os.path.join(base_dir, split)
+        v2_0_path = os.path.join(split_path, "v2.0")
+
+        if not os.path.exists(v2_0_path):
+            print(f"Warning: 'v2.0' folder not found for '{split}'. Skipping.")
+            continue
+
+        subfolders = ["instances", "labels", "panoptic", "polygons"]
+        for subfolder in subfolders:
+            source = os.path.join(v2_0_path, subfolder)
+            destination = os.path.join(split_path, subfolder)
+
+            if os.path.exists(source):
+                os.makedirs(destination, exist_ok=True)
+                for item in os.listdir(source):
+                    shutil.move(os.path.join(source, item), destination)
+
+        panoptic_path = os.path.join(split_path, "panoptic")
+        if os.path.exists(panoptic_path):
+            files_to_delete = [f for f in os.listdir(panoptic_path) if f != "panoptic_2020.json"]
+            for filename in files_to_delete:
+                os.remove(os.path.join(panoptic_path, filename))
+            print(f"Cleaned out all but 'panoptic_2020.json' from {panoptic_path}")
+        
+        shutil.rmtree(v2_0_path)
+        print(f"Deleted: {v2_0_path}")
+
+    print("\nDataset structure cleanup complete.")
 
 
-# MAIN
 if __name__ == "__main__":
-    """ Main function to orchestrate the data ingestion pipeline. """
-    print("Starting the data ingestion and sampling process.")
+    # Download the raw dataset ---
+    downloaded_path = download_dataset(folder_id, final_dataset_dir)
 
-    # Load environment variables from .env file
-    load_dotenv(find_dotenv())
-    
-    download_and_extract(temp_dir, dataset_splits)
-    create_dataset_subset(temp_dir, dataset_dir, sample_pct, dataset_splits)
-    final_cleanup(temp_dir)
-    
-    print(f"\nAll steps completed. The processed dataset is located in the '{dataset_dir}' folder.")
+    if downloaded_path:
+        # Clean and restructure the raw dataset from unnecessary files
+        cleanup_dataset(downloaded_path)
+        
+    print("\nProcessing finished. Your cleaned dataset is in the 'final_dataset' folder.")
