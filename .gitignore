@@ -1,6 +1,6 @@
 # Data
 /data/
-
+.env
 # Mac OS-specific storage files
 .DS_Store
 
