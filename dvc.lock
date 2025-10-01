@@ -1,0 +1,122 @@
+schema: '2.0'
+stages:
+  ingest:
+    cmd: python mlops_xoxo/data_ingest.py
+    deps:
+    - path: data/external/casioface/train.idx
+      hash: md5
+      md5: 0b4801a39ba6237c891dcfb777eeb295
+      size: 8707814
+    - path: data/external/casioface/train.lst
+      hash: md5
+      md5: 99d49349533309391272473538054a0d
+      size: 73167925
+    - path: data/external/casioface/train.rec
+      hash: md5
+      md5: 459c18fd8152cc1d4a9484c3f0713d19
+      size: 2726043620
+    - path: mlops_xoxo/data_ingest.py
+      hash: md5
+      md5: 4e38caa49f7da7685373d6fcb7b61fbb
+      size: 435
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: 560985c1fe22c75212e70058f38e54cf.dir
+      size: 54198793
+      nfiles: 10000
+  validate:
+    cmd: python mlops_xoxo/data_validate.py
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 560985c1fe22c75212e70058f38e54cf.dir
+      size: 54198793
+      nfiles: 10000
+    - path: mlops_xoxo/data_validate.py
+      hash: md5
+      md5: 6732642e41a6f0a2251ea535eb078f4a
+      size: 2378
+    outs:
+    - path: docs
+      hash: md5
+      md5: e35169b16cffac93df180700298927d1.dir
+      size: 194
+      nfiles: 1
+  split:
+    cmd: python mlops_xoxo/data_split.py
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 560985c1fe22c75212e70058f38e54cf.dir
+      size: 54198793
+      nfiles: 10000
+    - path: mlops_xoxo/data_split.py
+      hash: md5
+      md5: 326d81faeaf6d88d2955cb927555c3d2
+      size: 1239
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: 4fad9b153b0f7dcc79020406bf6d135f.dir
+      size: 54527737
+      nfiles: 10001
+  train:
+    cmd: python mlops_xoxo/train.py
+    deps:
+    - path: data/processed/train
+      hash: md5
+      md5: e24243435273348986708b38e673c77d.dir
+      size: 37867831
+      nfiles: 6974
+    - path: mlops_xoxo/train.py
+      hash: md5
+      md5: 5e913be67f217beee4d68a74d1f1eeb1
+      size: 4918
+    - path: params.yaml
+      hash: md5
+      md5: 0ebcf7c7b2e3f7204b2ebef4b763ab17
+      size: 531
+    params:
+      params.yaml:
+        training:
+          batch_size: 64
+          epochs: 20
+          lr: 0.0001
+          embedding_size: 512
+          margin: 0.2
+          weight_decay: 0.0001
+          device: mps
+    outs:
+    - path: models/face_embedding
+      hash: md5
+      md5: d9bb2035a65ab68cb01dc6b363b60f16.dir
+      size: 112011117
+      nfiles: 1
+  eval:
+    cmd: python mlops_xoxo/eval.py
+    deps:
+    - path: data/processed/val
+      hash: md5
+      md5: d4c6110278efe2b1550fbb96126ea559.dir
+      size: 10644412
+      nfiles: 1975
+    - path: mlops_xoxo/eval.py
+      hash: md5
+      md5: 661bb8a861910b3142ecba758ea19304
+      size: 3339
+    - path: models/face_embedding
+      hash: md5
+      md5: d9bb2035a65ab68cb01dc6b363b60f16.dir
+      size: 112011117
+      nfiles: 1
+    - path: params.yaml
+      hash: md5
+      md5: 0ebcf7c7b2e3f7204b2ebef4b763ab17
+      size: 531
+    outs:
+    - path: reports
+      hash: md5
+      md5: 2c1c750d822260aaba6affdda95517e8.dir
+      size: 117646
+      nfiles: 2

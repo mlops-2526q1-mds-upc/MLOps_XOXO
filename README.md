@@ -58,3 +58,29 @@ A short description of the project.
 ```
 
 ---
+
+# CasioFace MLOps pipeline (DVC + MLflow)
+
+This repo contains a complete **face re-identification pipeline** on the CasioFace dataset:
+
+- Data ingestion
+- Face detection + preprocessing
+- Data validation
+- Model training
+- Model evaluation
+
+The pipeline is reproducible with **DVC** and experiment tracking is handled with **MLflow**.
+
+---
+
+## 1. Setup environment
+
+```bash
+# clone your repo if not already
+git clone <your-repo>
+cd <your-repo>
+
+# create environment from conda.yaml
+conda env create -f conda.yaml
+conda activate casioface-env
+```

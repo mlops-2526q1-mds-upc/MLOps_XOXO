@@ -1,0 +1,47 @@
+stages:
+  ingest:
+    cmd: python mlops_xoxo/data_ingest.py
+    deps:
+      - mlops_xoxo/data_ingest.py
+      - data/external/casioface/train.rec
+      - data/external/casioface/train.idx
+      - data/external/casioface/train.lst
+    outs:
+      - data/raw
+
+  validate:
+    cmd: python mlops_xoxo/data_validate.py
+    deps:
+      - mlops_xoxo/data_validate.py
+      - data/raw
+    outs:
+      - docs
+
+  split:
+    cmd: python mlops_xoxo/data_split.py
+    deps:
+      - mlops_xoxo/data_split.py
+      - data/raw
+    outs:
+      - data/processed
+
+  train:
+    cmd: python mlops_xoxo/train.py
+    deps:
+      - mlops_xoxo/train.py
+      - data/processed/train
+      - params.yaml
+    outs:
+      - models/face_embedding
+    params:
+      - training
+
+  eval:
+    cmd: python mlops_xoxo/eval.py
+    deps:
+      - mlops_xoxo/eval.py
+      - models/face_embedding
+      - data/processed/validate
+      - params.yaml
+    outs:
+      - reports

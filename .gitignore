@@ -1,6 +1,8 @@
 # Data
 /data/
 .env
+/models/
+/docs/
 # Mac OS-specific storage files
 .DS_Store
 
@@ -189,3 +191,4 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+/reports
