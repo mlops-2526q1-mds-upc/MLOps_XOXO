@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/pawarit/Desktop/XOXO/MLOps_XOXO/mlruns/891529961508917971/fbef3338396f443fa5d532fda09a4d76/artifacts
+end_time: 1759073679042
+entry_point_name: ''
+experiment_id: '891529961508917971'
+lifecycle_stage: active
+run_id: fbef3338396f443fa5d532fda09a4d76
+run_name: Test_run3
+run_uuid: fbef3338396f443fa5d532fda09a4d76
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759073679036
+status: 4
+tags: []
+user_id: pawarit

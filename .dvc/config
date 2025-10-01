@@ -1,0 +1,6 @@
+[core]
+    remote = origin
+
+['remote "origin"']
+    url = https://dagshub.com/pawarit.jamjod/MLOps_XOXO.dvc
+    auth = basic

@@ -6,8 +6,24 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "dvc>=3.63.0",
+    "mlflow<3.0",
     "numpy>=2.3.3",
     "pandas>=2.3.2",
+    "torch",
+    "torchvision",
+    "facenet-pytorch",
+    "mlflow",
+    "dvc",
+    "opencv-python",
+    "scikit-learn",
+    "matplotlib",
+    "pandas",
+    "tqdm",
+    "pillow",
+    "seaborn",
+    "pyarrow",
+    "pyyaml",
+    "dotenv",
 ]
 
 [dependency-groups]

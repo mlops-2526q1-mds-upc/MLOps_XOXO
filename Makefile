@@ -68,3 +68,7 @@ export PRINT_HELP_PYSCRIPT
 
 help:
 	@$(PYTHON_INTERPRETER) -c "${PRINT_HELP_PYSCRIPT}" < $(MAKEFILE_LIST)
+
+run_pipeline:
+	 export MLFLOW_RUN_ID=`python mlops_xoxo/utils/start_pipeline.py $(RUN_NAME) | tr -d '\n'`; \
+	 dvc repro
