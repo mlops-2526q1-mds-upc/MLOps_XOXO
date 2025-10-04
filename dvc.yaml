@@ -26,15 +26,15 @@ stages:
       - data/processed
 
   train:
-    cmd: python mlops_xoxo/train.py
+    cmd: python mlops_xoxo/train.py > mlflow_run_id.txt
     deps:
       - mlops_xoxo/train.py
       - data/processed/train
       - params.yaml
-    outs:
-      - models/face_embedding
     params:
       - training
+    outs:
+      - models/face_embedding
 
   eval:
     cmd: python mlops_xoxo/eval.py
@@ -47,7 +47,9 @@ stages:
       - reports
 
   register_model:
-    cmd: python mlops_xoxo/register_model.py
+    cmd: |
+      export MLFLOW_RUN_ID=$(cat mlflow_run_id.txt | grep 'MLFLOW_RUN_ID:' | cut -d ':' -f 2) 
+      python mlops_xoxo/register_model.py 
     deps:
       - mlops_xoxo/register_model.py
       - models/face_embedding

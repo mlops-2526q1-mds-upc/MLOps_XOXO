@@ -58,21 +58,21 @@ stages:
     outs:
     - path: data/processed
       hash: md5
-      md5: 4fad9b153b0f7dcc79020406bf6d135f.dir
+      md5: 97549a74133df498032cbd76738b7ffc.dir
       size: 54527737
       nfiles: 10001
   train:
-    cmd: python mlops_xoxo/train.py
+    cmd: python mlops_xoxo/train.py > mlflow_run_id.txt
     deps:
     - path: data/processed/train
       hash: md5
-      md5: e24243435273348986708b38e673c77d.dir
-      size: 37867831
+      md5: 2a683e6ec579f5dc4aabf94c01c6b2c8.dir
+      size: 37817245
       nfiles: 6974
     - path: mlops_xoxo/train.py
       hash: md5
-      md5: 5e913be67f217beee4d68a74d1f1eeb1
-      size: 4918
+      md5: c5d47ee5ff5ed469cf41d903db609995
+      size: 6324
     - path: params.yaml
       hash: md5
       md5: 0ebcf7c7b2e3f7204b2ebef4b763ab17
@@ -90,7 +90,7 @@ stages:
     outs:
     - path: models/face_embedding
       hash: md5
-      md5: d9bb2035a65ab68cb01dc6b363b60f16.dir
+      md5: 31d081f026fa017876bfa9e90f4d67af.dir
       size: 112011117
       nfiles: 1
   eval:
@@ -107,7 +107,7 @@ stages:
       size: 3339
     - path: models/face_embedding
       hash: md5
-      md5: d9bb2035a65ab68cb01dc6b363b60f16.dir
+      md5: bd30f87ab02dd7777c77c10608460197.dir
       size: 112011117
       nfiles: 1
     - path: params.yaml
@@ -117,6 +117,6 @@ stages:
     outs:
     - path: reports
       hash: md5
-      md5: 2c1c750d822260aaba6affdda95517e8.dir
-      size: 117646
+      md5: 58bc49dca9d2edd3b8eb1c9a66411815.dir
+      size: 117645
       nfiles: 2

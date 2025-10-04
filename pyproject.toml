@@ -24,6 +24,7 @@ dependencies = [
     "pyarrow",
     "pyyaml",
     "dotenv",
+    "codecarbon>=3.0.5",
 ]
 
 [dependency-groups]

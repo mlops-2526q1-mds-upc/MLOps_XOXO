@@ -13,11 +13,12 @@ from tqdm import tqdm
 import mlflow
 import mlflow.pytorch
 from utils.mlflow_run_decorator import mlflow_run
-
+import pandas as pd
+from codecarbon import EmissionsTracker
 
 # Load environment variables
-load_dotenv()  # ensures .env is loaded
-mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")  # e.g., DagsHub URL
+load_dotenv()  # .env is loaded
+mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")  
 
 # Load parameters
 with open('params.yaml') as f:
@@ -95,34 +96,59 @@ model = InceptionResnetV1(pretrained='vggface2', classify=False, device=DEVICE).
 optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
 criterion = torch.nn.TripletMarginLoss(margin=MARGIN)
 
+emissions_output_path = "reports/emissions.csv"
+Path("reports").mkdir(parents=True, exist_ok=True)
+
 @mlflow_run
 def train_model():
     mlflow.log_params({'batch_size': BATCH, 'epochs': EPOCHS, 'lr': LR, 'margin': MARGIN, 'weight_decay': WEIGHT_DECAY})
 
-    for epoch in range(EPOCHS):
-        model.train()
-        total_loss = 0.0
+    print("\nStarting CodeCarbon Emissions Tracker.")
 
-        for _ in tqdm(train_loader, desc=f'Epoch {epoch}'):
-            triplet_indices = [train_ds.sample_triplet() for _ in range(BATCH // 3)]
-            if not triplet_indices:
-                continue
+    # Initialize the tracker with a project name for better organization
+    # Context manager ensures the tracker stops automatically
+    with EmissionsTracker(project_name=experiment_name, output_file=emissions_output_path) as tracker:
 
-            anchors = torch.stack([train_ds[a][0] for a, _, _ in triplet_indices]).to(DEVICE)
-            positives = torch.stack([train_ds[p][0] for _, p, _ in triplet_indices]).to(DEVICE)
-            negatives = torch.stack([train_ds[n][0] for _, _, n in triplet_indices]).to(DEVICE)
+        for epoch in range(EPOCHS):
+            model.train()
+            total_loss = 0.0
 
-            a_emb, p_emb, n_emb = model(anchors), model(positives), model(negatives)
-            loss = criterion(a_emb, p_emb, n_emb)
+            for _ in tqdm(train_loader, desc=f'Epoch {epoch}'):
+                triplet_indices = [train_ds.sample_triplet() for _ in range(BATCH // 3)]
+                if not triplet_indices:
+                    continue
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item()
+                anchors = torch.stack([train_ds[a][0] for a, _, _ in triplet_indices]).to(DEVICE)
+                positives = torch.stack([train_ds[p][0] for _, p, _ in triplet_indices]).to(DEVICE)
+                negatives = torch.stack([train_ds[n][0] for _, _, n in triplet_indices]).to(DEVICE)
 
-        avg_loss = total_loss / max(1, len(train_loader))
-        mlflow.log_metric('train_loss', avg_loss, step=epoch)
-        print(f'Epoch {epoch} avg loss {avg_loss:.4f}')
+                a_emb, p_emb, n_emb = model(anchors), model(positives), model(negatives)
+                loss = criterion(a_emb, p_emb, n_emb)
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                total_loss += loss.item()
+
+            avg_loss = total_loss / max(1, len(train_loader))
+            mlflow.log_metric('train_loss', avg_loss, step=epoch)
+            print(f'Epoch {epoch} avg loss {avg_loss:.4f}')
+
+        # Log the final emissions to MLflow
+        if Path(emissions_output_path).exists(): 
+            # Read the last entry from emissions.csv to get all the details
+            try:
+                df = pd.read_csv(emissions_output_path).tail(1) 
+                
+                # Log the key environmental metrics
+                mlflow.log_metric('carbon_emissions_kg_co2', df['emissions'].iloc[0])
+                mlflow.log_metric('energy_consumed_kwh', df['energy_consumed'].iloc[0])
+                mlflow.log_param('compute_location', f"{df['country_name'].iloc[0]} ({df['region'].iloc[0]})")
+                
+                print(f"CodeCarbon successfully logged {df['emissions'].iloc[0]:.6f} kg CO₂ to MLflow.")
+
+            except Exception as e:
+                print(f"Error logging CodeCarbon metrics to MLflow: {e}")
 
     # Save model
     model_dir = Path('models/face_embedding')
@@ -132,6 +158,8 @@ def train_model():
     mlflow.log_artifact(str(model_path))
     mlflow.pytorch.log_model(model, 'pytorch_model')
     print(f'Training finished — model saved to {model_dir}')
+
+    print(f"MLFLOW_RUN_ID:{mlflow.active_run().info.run_id}")
 
 if __name__ == "__main__":
     train_model()
