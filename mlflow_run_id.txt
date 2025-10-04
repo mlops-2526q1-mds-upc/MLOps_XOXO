@@ -1,0 +1,25 @@
+Using device: mps
+
+Starting CodeCarbon Emissions Tracker.
+Epoch 0 avg loss 0.0819
+Epoch 1 avg loss 0.0645
+Epoch 2 avg loss 0.0534
+Epoch 3 avg loss 0.0438
+Epoch 4 avg loss 0.0465
+Epoch 5 avg loss 0.0431
+Epoch 6 avg loss 0.0375
+Epoch 7 avg loss 0.0367
+Epoch 8 avg loss 0.0319
+Epoch 9 avg loss 0.0336
+Epoch 10 avg loss 0.0249
+Epoch 11 avg loss 0.0290
+Epoch 12 avg loss 0.0263
+Epoch 13 avg loss 0.0238
+Epoch 14 avg loss 0.0215
+Epoch 15 avg loss 0.0223
+Epoch 16 avg loss 0.0222
+Epoch 17 avg loss 0.0256
+Epoch 18 avg loss 0.0206
+Epoch 19 avg loss 0.0201
+Training finished — model saved to models/face_embedding
+MLFLOW_RUN_ID:72c0e61433444e7ab4bb0586afe72cd8
