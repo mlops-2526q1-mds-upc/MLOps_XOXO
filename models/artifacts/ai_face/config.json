@@ -1,0 +1,12 @@
+{
+  "splits_dir": "data\\splits\\deepfake_val_224_split",
+  "norm_json": "data\\processed\\deepfake_val_224\\normalization.json",
+  "backbone": "mobilenet_v3_small",
+  "epochs": 5,
+  "batch_size": 64,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "num_workers": 2,
+  "freeze_backbone": false,
+  "time": "2025-10-06T02:41:04Z"
+}
