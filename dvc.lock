@@ -98,8 +98,8 @@ stages:
     deps:
     - path: data/processed/val
       hash: md5
-      md5: d4c6110278efe2b1550fbb96126ea559.dir
-      size: 10644412
+      md5: c2ac1853185081b79f50e8fb5747b479.dir
+      size: 10704563
       nfiles: 1975
     - path: mlops_xoxo/eval.py
       hash: md5
@@ -107,7 +107,7 @@ stages:
       size: 3339
     - path: models/face_embedding
       hash: md5
-      md5: bd30f87ab02dd7777c77c10608460197.dir
+      md5: 31d081f026fa017876bfa9e90f4d67af.dir
       size: 112011117
       nfiles: 1
     - path: params.yaml
@@ -117,6 +117,6 @@ stages:
     outs:
     - path: reports
       hash: md5
-      md5: 58bc49dca9d2edd3b8eb1c9a66411815.dir
-      size: 117645
-      nfiles: 2
+      md5: e532ee989de9bfd563ed8a6f6b4f3af1.dir
+      size: 118439
+      nfiles: 3

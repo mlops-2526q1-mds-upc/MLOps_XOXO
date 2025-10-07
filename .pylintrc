@@ -1,0 +1,29 @@
+[MESSAGES CONTROL]
+# Customize Pylint to allow for common ML/Data Science practices.
+disable=
+    # E-Errors: Keep all enabled by default.
+    # W-Warnings:
+    # C0301: Line too long (handled by max-line-length below, but kept here for clarity)
+    C0301, 
+    # C0303: Trailing whitespace (often useful to fix, but sometimes noisy)
+    # C0114: Missing module docstring (we don't need a docstring for every tiny script)
+    C0114,
+    # R0903: Too few public methods (common in helper classes)
+    R0903,
+    # W0511: Fixme messages (allows leaving TODOs in the code)
+    W0511,
+    # W0613: Unused argument (common when dealing with library interfaces like PyTorch/TensorFlow)
+    W0613,
+
+[FORMAT]
+max-line-length=120
+
+[MASTER]
+# List of modules that can be found by Pylint
+init-hook=
+load-plugins=
+search-sugared-tokens=yes
+# Specify the target directories for Pylint to analyze
+# Pylint needs to know where your source code is
+ignore=
+ignore-paths=mlops_xoxo/__init__.py

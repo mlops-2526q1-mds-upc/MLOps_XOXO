@@ -25,6 +25,7 @@ dependencies = [
     "pyyaml",
     "dotenv",
     "codecarbon>=3.0.5",
+    "pylint>=3.3.8",
 ]
 
 [dependency-groups]
