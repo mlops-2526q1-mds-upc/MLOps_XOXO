@@ -25,6 +25,9 @@ dependencies = [
     "pyyaml",
     "dotenv",
     "codecarbon>=3.0.5",
+    "onnx>=1.14.0",
+    "onnx2pytorch>=0.2.0",
+    "onnxruntime>=1.15.0",
 ]
 
 [dependency-groups]
