@@ -2,7 +2,9 @@
 data/*
 !data/*.dvc
 .env
-/models/
+/models/.venv
+/models/data
+/models/face_embedding
 /docs/
 # Mac OS-specific storage files
 .DS_Store
