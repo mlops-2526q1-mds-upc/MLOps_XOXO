@@ -1,25 +1,90 @@
 Using device: mps
+['0000045', '0000099', '0000100', '0000102', '0000103', '0000105', '0000107', '0000108', '0000114', '0000117', '0000119', '0000121', '0000133', '0000137', '0000141', '0000143', '0000144', '0000145', '0000147', '0000156', '0000157', '0000159', '0000166', '0000168', '0000169', '0000170', '0000174', '0000177', '0000183', '0000185', '0000186', '0000188', '0000189', '0000192', '0000195', '0000198', '0000202', '0000204', '0000205', '0000207', '0000208', '0000210', '0000211', '0000212', '0000214', '0000220', '0000225', '0000233', '0000238', '0000240', '0000247', '0000249', '0000254', '0000256', '0000260', '0000262', '0000263']
 
 Starting CodeCarbon Emissions Tracker.
-Epoch 0 avg loss 0.0819
-Epoch 1 avg loss 0.0645
-Epoch 2 avg loss 0.0534
-Epoch 3 avg loss 0.0438
-Epoch 4 avg loss 0.0465
-Epoch 5 avg loss 0.0431
-Epoch 6 avg loss 0.0375
-Epoch 7 avg loss 0.0367
-Epoch 8 avg loss 0.0319
-Epoch 9 avg loss 0.0336
-Epoch 10 avg loss 0.0249
-Epoch 11 avg loss 0.0290
-Epoch 12 avg loss 0.0263
-Epoch 13 avg loss 0.0238
-Epoch 14 avg loss 0.0215
-Epoch 15 avg loss 0.0223
-Epoch 16 avg loss 0.0222
-Epoch 17 avg loss 0.0256
-Epoch 18 avg loss 0.0206
-Epoch 19 avg loss 0.0201
+Epoch 0 avg loss 15.7780
+Validation loss 13.7586, acc 0.0734
+🏃 View run epoch_0 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/25c548092f664492859dbfcbcfdd28a3
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 1 avg loss 11.2912
+Validation loss 12.1972, acc 0.1651
+🏃 View run epoch_1 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/2cb8383cfe04454fa3f1f171531606ff
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 2 avg loss 8.5644
+Validation loss 11.6808, acc 0.2334
+🏃 View run epoch_2 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/733116859140470fbffea1afa82a3493
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 3 avg loss 6.3593
+Validation loss 11.8489, acc 0.2623
+🏃 View run epoch_3 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/e3d423836fff44058a589e254e83cae8
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 4 avg loss 4.4465
+Validation loss 12.0935, acc 0.2678
+🏃 View run epoch_4 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/1b2beee2b6ea413b8732bcfdc323a122
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 5 avg loss 2.8937
+Validation loss 12.4045, acc 0.2628
+🏃 View run epoch_5 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/6cd8cd19a110422aadca005df7cf740f
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 6 avg loss 1.7185
+Validation loss 12.6735, acc 0.2587
+🏃 View run epoch_6 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/08e3d96f3ac540a09f27b240c55d89d3
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 7 avg loss 0.9762
+Validation loss 12.8636, acc 0.2896
+🏃 View run epoch_7 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/a9c22aa0e8264b5fb37804ace0242090
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 8 avg loss 0.5158
+Validation loss 12.8322, acc 0.2962
+🏃 View run epoch_8 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/4bf8f321241c4483863f861fe45ea42d
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 9 avg loss 0.3040
+Validation loss 12.7550, acc 0.3119
+🏃 View run epoch_9 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/41af0b4a1cab4ecbad2b91151b7b1885
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 10 avg loss 0.1992
+Validation loss 12.7690, acc 0.3043
+🏃 View run epoch_10 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/f6f770d5e40e408d99068161ed401ae3
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 11 avg loss 0.1293
+Validation loss 12.9527, acc 0.3165
+🏃 View run epoch_11 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/40f6898d98144d7a92377c3e954af18c
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 12 avg loss 0.1102
+Validation loss 13.0020, acc 0.3149
+🏃 View run epoch_12 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/04aae9675d884d5b895c688f71fda178
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 13 avg loss 0.1039
+Validation loss 12.9264, acc 0.3195
+🏃 View run epoch_13 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/5becd43812094b96bdd437f1c3d6346c
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 14 avg loss 0.0987
+Validation loss 13.1714, acc 0.3134
+🏃 View run epoch_14 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/5979b1f8cb9e43929d5e6a80ebb9350c
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 15 avg loss 0.1273
+Validation loss 13.0749, acc 0.3256
+🏃 View run epoch_15 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/3aca4b151f0f4a4babf6f2f1310e8c46
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 16 avg loss 0.1282
+Validation loss 13.1719, acc 0.3311
+🏃 View run epoch_16 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/ec92b4cf952a45ac884c54a78837532e
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 17 avg loss 0.1563
+Validation loss 13.1691, acc 0.3418
+🏃 View run epoch_17 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/6453b003a8b9404c83dc0930771eb5a3
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 18 avg loss 0.1909
+Validation loss 13.2683, acc 0.3119
+🏃 View run epoch_18 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/f5ae4cbfb64340e593f520c6c9421133
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Epoch 19 avg loss 0.1677
+Validation loss 13.5739, acc 0.3372
+🏃 View run epoch_19 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/2e774d3b8b43477a81f02d9cc43a28a8
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+CodeCarbon successfully logged 0.000002 kg CO₂ to MLflow.
 Training finished — model saved to models/face_embedding
-MLFLOW_RUN_ID:72c0e61433444e7ab4bb0586afe72cd8
+🏃 View run train_model at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/0309ee5c637e46de9a1c15d06c956e5b
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+🏃 View run testrun_1 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/ddd1d6d7345d46e2bebd92ecd8056070
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
