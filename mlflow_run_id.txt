@@ -2,7 +2,12 @@ Using device: mps
 ['0000045', '0000099', '0000100', '0000102', '0000103', '0000105', '0000107', '0000108', '0000114', '0000117', '0000119', '0000121', '0000133', '0000137', '0000141', '0000143', '0000144', '0000145', '0000147', '0000156', '0000157', '0000159', '0000166', '0000168', '0000169', '0000170', '0000174', '0000177', '0000183', '0000185', '0000186', '0000188', '0000189', '0000192', '0000195', '0000198', '0000202', '0000204', '0000205', '0000207', '0000208', '0000210', '0000211', '0000212', '0000214', '0000220', '0000225', '0000233', '0000238', '0000240', '0000247', '0000249', '0000254', '0000256', '0000260', '0000262', '0000263']
 
 Starting CodeCarbon Emissions Tracker.
-Epoch 0 avg loss 15.6706
-Validation loss 13.5275, acc 0.0795
-🏃 View run epoch_0 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/79e390f214ef475cbc2d27cea64c121c
+Epoch 0 avg loss 15.8169
+Validation loss 13.8026, acc 0.0689
+🏃 View run epoch_0 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/33b920ebe9944e71ad30526b53caccb1
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+Training finished — model saved to models/face_embedding
+🏃 View run train_model at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/980023a07e1349f3883fdcd20795f94d
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+🏃 View run face_embedding_2_epochs at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/92ac6640b53c42f594673f9ba6ce865c
 🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
