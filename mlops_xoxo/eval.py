@@ -38,15 +38,15 @@ state_dict = torch.load(model_path, map_location=DEVICE)
 model.load_state_dict(state_dict, strict=False)  # ignore extra logits keys
 model.eval()
 
-    # Image transform
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize([0.5,0.5,0.5],[0.5,0.5,0.5])
-    ])
+# Image transform
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize([0.5,0.5,0.5],[0.5,0.5,0.5])
+])
 
-    # Load manifest
-    OUT = Path(params['dataset']['processed_dir'])
-    manifest = json.load(open(OUT /'splits'/ 'manifest.json'))
+# Load manifest
+OUT = Path(params['dataset']['processed_dir'])
+manifest = json.load(open(OUT /'splits'/ 'manifest.json'))
 
 
 def evaluate_model():
