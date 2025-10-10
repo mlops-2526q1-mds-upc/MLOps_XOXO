@@ -141,7 +141,7 @@ emissions_output_path = "reports/emissions.csv"
 Path("reports").mkdir(parents=True, exist_ok=True)
 
 
-def train_model():
+def train_model(run_id=None):
     mlflow.log_params({'batch_size': BATCH, 'epochs': EPOCHS, 'lr': LR, 'margin': MARGIN, 'weight_decay': WEIGHT_DECAY})
 
     print("\nStarting CodeCarbon Emissions Tracker.")
@@ -149,7 +149,10 @@ def train_model():
     # Initialize the tracker with a project name for better organization
     # Context manager ensures the tracker stops automatically
     with EmissionsTracker(project_name="Face_embedding", output_file=emissions_output_path) as tracker:
-
+        global_step = 0 
+        best_val_acc = 0.0
+        best_val_loss = float("inf")
+        best_epoch = 0
         for epoch in range(EPOCHS):
             with mlflow.start_run(nested=True, run_name=f"epoch_{epoch}") as epoch_run:
                 model.train()
@@ -190,8 +193,23 @@ def train_model():
                 val_acc = correct / max(1, total)
                 mlflow.log_metric('val_loss', val_loss, step=epoch)
                 mlflow.log_metric('val_accuracy', val_acc, step=epoch)
+                # ✅ ALSO log to parent run (train_model) for global tracking
+                mlflow.log_metric("train_loss", avg_loss, step=epoch, run_id=run_id)
+                mlflow.log_metric("val_loss", val_loss, step=epoch, run_id=run_id)
+                mlflow.log_metric("val_accuracy", val_acc, step=epoch, run_id=run_id)
                 print(f'Validation loss {val_loss:.4f}, acc {val_acc:.4f}')
-            
+                if val_acc > best_val_acc:
+                    best_val_acc = val_acc
+                    best_val_loss = val_loss
+                    best_epoch = epoch
+
+        # After all epochs finish, log final summary metrics
+        mlflow.log_metric("final_train_loss", avg_loss)        # from last epoch
+        mlflow.log_metric("final_val_loss", val_loss)
+        mlflow.log_metric("final_val_accuracy", val_acc)
+        mlflow.log_metric("best_val_accuracy", best_val_acc)
+        mlflow.log_metric("best_val_loss", best_val_loss)
+        mlflow.log_param("best_epoch", best_epoch)    
         # Log the final emissions to MLflow
         if Path(emissions_output_path).exists(): 
             # Read the last entry from emissions.csv to get all the details
@@ -202,8 +220,7 @@ def train_model():
                 mlflow.log_metric('carbon_emissions_kg_co2', df['emissions'].iloc[0])
                 mlflow.log_metric('energy_consumed_kwh', df['energy_consumed'].iloc[0])
                 mlflow.log_param('compute_location', f"{df['country_name'].iloc[0]} ({df['region'].iloc[0]})")
-                
-                print(f"CodeCarbon successfully logged {df['emissions'].iloc[0]:.6f} kg CO₂ to MLflow.")
+                # track best epoch
 
             except Exception as e:
                 print(f"Error logging CodeCarbon metrics to MLflow: {e}")
@@ -239,4 +256,4 @@ if __name__ == "__main__":
             yaml.safe_dump(params, f)
         # Nested run for training
         with mlflow.start_run(nested=True, run_name="train_model"):
-            train_model()
+            train_model(run_id=mlflow.active_run().info.run_id)

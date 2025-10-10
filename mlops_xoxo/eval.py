@@ -12,9 +12,21 @@ import mlflow
 from dotenv import load_dotenv
 import os
 from utils.mlflow_run_decorator import mlflow_run
-# Load params
+
 with open("params.yaml") as f:
     params = yaml.safe_load(f)
+
+load_dotenv()
+mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
+if mlflow_uri:
+    mlflow.set_tracking_uri(mlflow_uri)
+mlflow_username = os.getenv("MLFLOW_TRACKING_USERNAME")
+mlflow_password = os.getenv("MLFLOW_TRACKING_PASSWORD")
+if mlflow_username and mlflow_password:
+    os.environ["MLFLOW_TRACKING_USERNAME"] = mlflow_username
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = mlflow_password
+
+run_name = params['mlflow'].get('run_name', 'default_run')
 
 # Device setup
 DEVICE = torch.device('mps') if getattr(torch.backends, 'mps', None) else torch.device('cpu')
@@ -94,4 +106,24 @@ def evaluate_model():
     mlflow.log_artifact(str(predictions_file))
 
 if __name__ == "__main__":
-    evaluate_model()
+    # Get experiment id or create one
+    experiment_id = params['mlflow'].get('experiment_id')
+    if not experiment_id:
+        experiment_name = params['mlflow'].get('experiment_name', 'face_embedding')
+        mlflow.set_experiment(experiment_name)
+        experiment = mlflow.get_experiment_by_name(experiment_name)
+        experiment_id = experiment.experiment_id
+        params['mlflow']['experiment_id'] = experiment_id
+        with open("params.yaml", "w") as f:
+            yaml.safe_dump(params, f)
+    else:
+        mlflow.set_experiment(params['mlflow'].get('experiment_name', 'face_embedding'))
+
+    # Start top-level run with experiment_id
+    with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as parent:
+        params['mlflow']['run_id'] = parent.info.run_id
+        with open("params.yaml", "w") as f:
+            yaml.safe_dump(params, f)
+        # Nested run for training
+        with mlflow.start_run(nested=True, run_name="evaluate_model"):
+            evaluate_model()
