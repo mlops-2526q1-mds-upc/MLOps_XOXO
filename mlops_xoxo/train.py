@@ -13,6 +13,8 @@ import mlflow
 import mlflow.pytorch
 import pandas as pd
 from codecarbon import EmissionsTracker
+from collections import defaultdict
+import numpy as np
 
 with open("params.yaml") as f:
     params = yaml.safe_load(f)
@@ -225,14 +227,79 @@ def train_model(run_id=None):
             except Exception as e:
                 print(f"Error logging CodeCarbon metrics to MLflow: {e}")
 
+    
+    # --- Compute top-1 and top-5 NN accuracy on validation set ---
+    print("Computing top-1 and top-5 NN accuracy on validation set...")
+    model.eval()
+    # Build gallery: mean embedding per identity from train set
+    gallery = {}
+    embs_by_id = defaultdict(list)
+    for img_path, label in train_ds.samples:
+        img = Image.open(img_path).convert('RGB')
+        t = transform(img).unsqueeze(0).to(DEVICE)
+        e = model(t).detach().cpu().numpy()[0]
+        class_name = train_ds.classes[label]
+        embs_by_id[class_name].append(e)
+    for k, v in embs_by_id.items():
+        gallery[k] = np.mean(v, axis=0)
+
+    # NN accuracy on val set
+    correct_top1, correct_top5, total = 0, 0, 0
+    for img_path, label in val_ds.samples:
+        true_id = val_ds.classes[label]
+        img = Image.open(img_path).convert('RGB')
+        t = transform(img).unsqueeze(0).to(DEVICE)
+        e = model(t).detach().cpu().numpy()[0]
+        sims = {k: e.dot(v) / (np.linalg.norm(e)*np.linalg.norm(v)) for k,v in gallery.items()}
+        sorted_ids = sorted(sims, key=sims.get, reverse=True)
+        pred_top1 = sorted_ids[0]
+        pred_top5 = sorted_ids[:5]
+        if pred_top1 == true_id:
+            correct_top1 += 1
+        if true_id in pred_top5:
+            correct_top5 += 1
+        total += 1
+    acc_top1 = correct_top1 / total if total else 0
+    acc_top5 = correct_top5 / total if total else 0
+    print(f'Validation Top-1 NN accuracy: {acc_top1:.4f}')
+    print(f'Validation Top-5 NN accuracy: {acc_top5:.4f}')
+    mlflow.log_metric('val_top1_nn_accuracy', acc_top1)
+    mlflow.log_metric('val_top5_nn_accuracy', acc_top5)
+
     # Save model
     model_dir = Path('models/face_embedding')
     model_dir.mkdir(parents=True, exist_ok=True)
     model_path = model_dir / 'mobilenetv2_arcface_epoch_last.pt'
     torch.save(model.state_dict(), model_path)
     mlflow.log_artifact(str(model_path))
-    mlflow.pytorch.log_model(model, 'pytorch_model')
-    print(f'Training finished — model saved to {model_dir}')
+
+    # Register Model in MLflow Model Registry with metadata
+    model_name = "mobilenetv2_arcface_model"
+    metadata = {
+        "framework": "pytorch",
+        "embedding_size": 512,
+        "arcface_margin": MARGIN,
+        "num_classes": NUM_CLASSES,
+        "best_val_accuracy": best_val_acc,
+        "best_epoch": best_epoch
+    }
+    # Log the model and register it
+    mlflow.pytorch.log_model(
+        model,
+        artifact_path="pytorch_model",
+        registered_model_name=model_name,
+        metadata=metadata
+    )
+    # Optionally, set tags for the run
+    mlflow.set_tags({
+        "model_type": "MobileNetV2+ArcFace",
+        "train_dataset": str(DATA_DIR),
+        "validation_dataset": str(VAL_DIR),
+        "validation_top1_nn_acc": acc_top1,
+        "validation_top5_nn_acc": acc_top5
+    })
+    print(f'Training finished — model saved to {model_dir} and registered as {model_name}')
+
 
 
 if __name__ == "__main__":
@@ -254,6 +321,7 @@ if __name__ == "__main__":
         params['mlflow']['run_id'] = parent.info.run_id
         with open("params.yaml", "w") as f:
             yaml.safe_dump(params, f)
+
         # Nested run for training
         with mlflow.start_run(nested=True, run_name="train_model"):
             train_model(run_id=mlflow.active_run().info.run_id)
