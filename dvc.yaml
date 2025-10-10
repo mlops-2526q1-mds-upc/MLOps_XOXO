@@ -45,13 +45,3 @@ stages:
       - params.yaml
     outs:
       - reports
-
-  register_model:
-    cmd: |
-      export MLFLOW_RUN_ID=$(cat mlflow_run_id.txt | grep 'MLFLOW_RUN_ID:' | cut -d ':' -f 2) 
-      python mlops_xoxo/register_model.py 
-    deps:
-      - mlops_xoxo/register_model.py
-      - models/face_embedding
-    params:
-      - training

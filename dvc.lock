@@ -71,11 +71,11 @@ stages:
       nfiles: 6974
     - path: mlops_xoxo/train.py
       hash: md5
-      md5: aecf9b5540d7d2b8319d1cb850e47f52
-      size: 10853
+      md5: b69a1edbedce035d844102e5a1bf74c9
+      size: 13353
     - path: params.yaml
       hash: md5
-      md5: 47959ab0c6194921d1552e9f4efc2646
+      md5: 2a1497689c8b20abc2ff16ef7250be89
       size: 615
     params:
       params.yaml:
@@ -83,14 +83,14 @@ stages:
           batch_size: 64
           device: mps
           embedding_size: 512
-          epochs: 1
+          epochs: 3
           lr: 0.0001
           margin: 0.2
           weight_decay: 0.0001
     outs:
     - path: models/face_embedding
       hash: md5
-      md5: 1db4354d6fe350cb5bfda103dca0ec28.dir
+      md5: 5fd102a942237fde062736773bb135f6.dir
       size: 11776372
       nfiles: 1
   eval:
@@ -103,22 +103,22 @@ stages:
       nfiles: 1975
     - path: mlops_xoxo/eval.py
       hash: md5
-      md5: 94790010e6783e950ea2384149184c7c
-      size: 4440
+      md5: 93c0e3d52386ce9f7ecf83fe41ab546c
+      size: 5197
     - path: models/face_embedding
       hash: md5
-      md5: 1db4354d6fe350cb5bfda103dca0ec28.dir
+      md5: 5fd102a942237fde062736773bb135f6.dir
       size: 11776372
       nfiles: 1
     - path: params.yaml
       hash: md5
-      md5: 47959ab0c6194921d1552e9f4efc2646
+      md5: 2a1497689c8b20abc2ff16ef7250be89
       size: 615
     outs:
     - path: reports
       hash: md5
-      md5: 89a53d8872d437add28189b110acf65b.dir
-      size: 117650
+      md5: d460cd6e26365b89be238df60ec21365.dir
+      size: 232241
       nfiles: 2
   register_model:
     cmd: "export MLFLOW_RUN_ID=$(cat mlflow_run_id.txt | grep 'MLFLOW_RUN_ID:' | cut
@@ -126,11 +126,11 @@ stages:
     deps:
     - path: mlops_xoxo/register_model.py
       hash: md5
-      md5: 12955a2f171dabec296f86ef73915c5a
-      size: 1655
+      md5: c69544e33847fcd7e0da839fa8018fff
+      size: 1666
     - path: models/face_embedding
       hash: md5
-      md5: 1db4354d6fe350cb5bfda103dca0ec28.dir
+      md5: 259e0943e4e53c7197d650ac66804295.dir
       size: 11776372
       nfiles: 1
     params:
@@ -139,7 +139,7 @@ stages:
           batch_size: 64
           device: mps
           embedding_size: 512
-          epochs: 1
+          epochs: 10
           lr: 0.0001
           margin: 0.2
           weight_decay: 0.0001
