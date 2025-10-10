@@ -11,29 +11,29 @@ import json
 import mlflow
 from dotenv import load_dotenv
 import os
-from utils.mlflow_run_decorator import mlflow_run
-
-# Load env variables
-load_dotenv()
-mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
-experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "default")
-
-# Load parameters
-with open('params.yaml') as f:
+from train import MobileFace
+with open("params.yaml") as f:
     params = yaml.safe_load(f)
 
-# MLflow setup
+load_dotenv()
+mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
 if mlflow_uri:
     mlflow.set_tracking_uri(mlflow_uri)
-mlflow.set_experiment(experiment_name)
+mlflow_username = os.getenv("MLFLOW_TRACKING_USERNAME")
+mlflow_password = os.getenv("MLFLOW_TRACKING_PASSWORD")
+if mlflow_username and mlflow_password:
+    os.environ["MLFLOW_TRACKING_USERNAME"] = mlflow_username
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = mlflow_password
+
+run_name = params['mlflow'].get('run_name', 'default_run')
 
 # Device setup
 DEVICE = torch.device('mps') if getattr(torch.backends, 'mps', None) else torch.device('cpu')
 print("Using device:", DEVICE)
 
 # Load model
-model_path = Path('models/face_embedding/facenet_epoch_last.pt')
-model = InceptionResnetV1(pretrained=None, classify=False).to(DEVICE)
+model_path = Path('models/face_embedding/mobilenetv2_arcface_epoch_last.pt')
+model = MobileFace().to(DEVICE)
 state_dict = torch.load(model_path, map_location=DEVICE)
 model.load_state_dict(state_dict, strict=False)  # ignore extra logits keys
 model.eval()
@@ -48,7 +48,7 @@ transform = transforms.Compose([
 OUT = Path(params['dataset']['processed_dir'])
 manifest = json.load(open(OUT /'splits'/ 'manifest.json'))
 
-@mlflow_run
+
 def evaluate_model():
     # Build gallery: mean embedding per identity from train
     gallery = {}
@@ -105,4 +105,24 @@ def evaluate_model():
     mlflow.log_artifact(str(predictions_file))
 
 if __name__ == "__main__":
-    evaluate_model()
+    # Get experiment id or create one
+    experiment_id = params['mlflow'].get('experiment_id')
+    if not experiment_id:
+        experiment_name = params['mlflow'].get('experiment_name', 'face_embedding')
+        mlflow.set_experiment(experiment_name)
+        experiment = mlflow.get_experiment_by_name(experiment_name)
+        experiment_id = experiment.experiment_id
+        params['mlflow']['experiment_id'] = experiment_id
+        with open("params.yaml", "w") as f:
+            yaml.safe_dump(params, f)
+    else:
+        mlflow.set_experiment(params['mlflow'].get('experiment_name', 'face_embedding'))
+
+    # Start top-level run with experiment_id
+    parent_run_id = params['mlflow']['run_id']
+    with mlflow.start_run(experiment_id=experiment_id, run_id=parent_run_id) as parent:
+        with open("params.yaml", "w") as f:
+            yaml.safe_dump(params, f)
+        # Nested run for training
+        with mlflow.start_run(nested=True, run_name="evaluate_model"):
+            evaluate_model()

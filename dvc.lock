@@ -58,7 +58,7 @@ stages:
     outs:
     - path: data/processed
       hash: md5
-      md5: 97549a74133df498032cbd76738b7ffc.dir
+      md5: c7fab794166c9b567de58a74b675c6b8.dir
       size: 54527737
       nfiles: 10001
   train:
@@ -66,57 +66,80 @@ stages:
     deps:
     - path: data/processed/train
       hash: md5
-      md5: 2a683e6ec579f5dc4aabf94c01c6b2c8.dir
-      size: 37817245
+      md5: 0a9f6f571f5c2351087a0e3321a3d058.dir
+      size: 37825416
       nfiles: 6974
     - path: mlops_xoxo/train.py
       hash: md5
-      md5: c5d47ee5ff5ed469cf41d903db609995
-      size: 6324
+      md5: aecf9b5540d7d2b8319d1cb850e47f52
+      size: 10853
     - path: params.yaml
       hash: md5
-      md5: 0ebcf7c7b2e3f7204b2ebef4b763ab17
-      size: 531
+      md5: 47959ab0c6194921d1552e9f4efc2646
+      size: 615
     params:
       params.yaml:
         training:
           batch_size: 64
-          epochs: 20
-          lr: 0.0001
+          device: mps
           embedding_size: 512
+          epochs: 1
+          lr: 0.0001
           margin: 0.2
           weight_decay: 0.0001
-          device: mps
     outs:
     - path: models/face_embedding
       hash: md5
-      md5: 31d081f026fa017876bfa9e90f4d67af.dir
-      size: 112011117
+      md5: 1db4354d6fe350cb5bfda103dca0ec28.dir
+      size: 11776372
       nfiles: 1
   eval:
     cmd: python mlops_xoxo/eval.py
     deps:
     - path: data/processed/val
       hash: md5
-      md5: d4c6110278efe2b1550fbb96126ea559.dir
-      size: 10644412
+      md5: f51b33ab25a5807cb008e45f3edf3992.dir
+      size: 10721750
       nfiles: 1975
     - path: mlops_xoxo/eval.py
       hash: md5
-      md5: 661bb8a861910b3142ecba758ea19304
-      size: 3339
+      md5: 94790010e6783e950ea2384149184c7c
+      size: 4440
     - path: models/face_embedding
       hash: md5
-      md5: bd30f87ab02dd7777c77c10608460197.dir
-      size: 112011117
+      md5: 1db4354d6fe350cb5bfda103dca0ec28.dir
+      size: 11776372
       nfiles: 1
     - path: params.yaml
       hash: md5
-      md5: 0ebcf7c7b2e3f7204b2ebef4b763ab17
-      size: 531
+      md5: 47959ab0c6194921d1552e9f4efc2646
+      size: 615
     outs:
     - path: reports
       hash: md5
-      md5: 58bc49dca9d2edd3b8eb1c9a66411815.dir
-      size: 117645
+      md5: 89a53d8872d437add28189b110acf65b.dir
+      size: 117650
       nfiles: 2
+  register_model:
+    cmd: "export MLFLOW_RUN_ID=$(cat mlflow_run_id.txt | grep 'MLFLOW_RUN_ID:' | cut
+      -d ':' -f 2) \npython mlops_xoxo/register_model.py \n"
+    deps:
+    - path: mlops_xoxo/register_model.py
+      hash: md5
+      md5: 12955a2f171dabec296f86ef73915c5a
+      size: 1655
+    - path: models/face_embedding
+      hash: md5
+      md5: 1db4354d6fe350cb5bfda103dca0ec28.dir
+      size: 11776372
+      nfiles: 1
+    params:
+      params.yaml:
+        training:
+          batch_size: 64
+          device: mps
+          embedding_size: 512
+          epochs: 1
+          lr: 0.0001
+          margin: 0.2
+          weight_decay: 0.0001
