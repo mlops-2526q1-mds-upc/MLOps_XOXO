@@ -11,8 +11,7 @@ import json
 import mlflow
 from dotenv import load_dotenv
 import os
-from utils.mlflow_run_decorator import mlflow_run
-
+from train import MobileFace
 with open("params.yaml") as f:
     params = yaml.safe_load(f)
 
@@ -33,8 +32,8 @@ DEVICE = torch.device('mps') if getattr(torch.backends, 'mps', None) else torch.
 print("Using device:", DEVICE)
 
 # Load model
-model_path = Path('models/face_embedding/facenet_epoch_last.pt')
-model = InceptionResnetV1(pretrained=None, classify=False).to(DEVICE)
+model_path = Path('models/face_embedding/mobilenetv2_arcface_epoch_last.pt')
+model = MobileFace().to(DEVICE)
 state_dict = torch.load(model_path, map_location=DEVICE)
 model.load_state_dict(state_dict, strict=False)  # ignore extra logits keys
 model.eval()
@@ -49,7 +48,7 @@ transform = transforms.Compose([
 OUT = Path(params['dataset']['processed_dir'])
 manifest = json.load(open(OUT /'splits'/ 'manifest.json'))
 
-@mlflow_run
+
 def evaluate_model():
     # Build gallery: mean embedding per identity from train
     gallery = {}
@@ -120,8 +119,8 @@ if __name__ == "__main__":
         mlflow.set_experiment(params['mlflow'].get('experiment_name', 'face_embedding'))
 
     # Start top-level run with experiment_id
-    with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as parent:
-        params['mlflow']['run_id'] = parent.info.run_id
+    parent_run_id = params['mlflow']['run_id']
+    with mlflow.start_run(experiment_id=experiment_id, run_id=parent_run_id) as parent:
         with open("params.yaml", "w") as f:
             yaml.safe_dump(params, f)
         # Nested run for training
