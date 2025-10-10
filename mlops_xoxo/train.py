@@ -12,7 +12,7 @@ import random
 from tqdm import tqdm
 import mlflow
 import mlflow.pytorch
-from utils.mlflow_run_decorator import mlflow_run
+from mlops_xoxo.utils.mlflow_run_decorator import mlflow_run
 import pandas as pd
 from codecarbon import EmissionsTracker
 

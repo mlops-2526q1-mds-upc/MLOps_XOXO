@@ -18,10 +18,6 @@ load_dotenv()
 mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
 experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "default")
 
-# Load parameters
-with open('params.yaml') as f:
-    params = yaml.safe_load(f)
-
 # MLflow setup
 if mlflow_uri:
     mlflow.set_tracking_uri(mlflow_uri)
@@ -31,25 +27,37 @@ mlflow.set_experiment(experiment_name)
 DEVICE = torch.device('mps') if getattr(torch.backends, 'mps', None) else torch.device('cpu')
 print("Using device:", DEVICE)
 
-# Load model
-model_path = Path('models/face_embedding/facenet_epoch_last.pt')
-model = InceptionResnetV1(pretrained=None, classify=False).to(DEVICE)
-state_dict = torch.load(model_path, map_location=DEVICE)
-model.load_state_dict(state_dict, strict=False)  # ignore extra logits keys
-model.eval()
-
-# Image transform
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize([0.5,0.5,0.5],[0.5,0.5,0.5])
-])
-
-# Load manifest
-OUT = Path(params['dataset']['processed_dir'])
-manifest = json.load(open(OUT /'splits'/ 'manifest.json'))
+# Empty placeholders globally so Python doesn't crash the import
+params = None
+model = None
+transform = None
+manifest = None
 
 @mlflow_run
 def evaluate_model():
+    global params, model, transform, manifest
+
+    # Load parameters
+    with open('params.yaml') as f:
+        params = yaml.safe_load(f)
+
+    # Load model
+    model_path = Path('models/face_embedding/facenet_epoch_last.pt')
+    model = InceptionResnetV1(pretrained=None, classify=False).to(DEVICE)
+    state_dict = torch.load(model_path, map_location=DEVICE)
+    model.load_state_dict(state_dict, strict=False)  # ignore extra logits keys
+    model.eval()
+
+    # Image transform
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize([0.5,0.5,0.5],[0.5,0.5,0.5])
+    ])
+
+    # Load manifest
+    OUT = Path(params['dataset']['processed_dir'])
+    manifest = json.load(open(OUT /'splits'/ 'manifest.json'))
+
     # Build gallery: mean embedding per identity from train
     gallery = {}
     embs_by_id = defaultdict(list)

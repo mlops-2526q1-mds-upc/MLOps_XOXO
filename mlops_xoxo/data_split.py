@@ -3,7 +3,7 @@ import os
 import shutil
 import json
 from pathlib import Path
-from utils.data_utils import create_manifest
+from mlops_xoxo.utils.data_utils import create_manifest
 
 # Paths
 RAW_DIR = Path("data/raw")              # raw images by person

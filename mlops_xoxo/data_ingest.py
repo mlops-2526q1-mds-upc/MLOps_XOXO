@@ -1,4 +1,4 @@
-from utils.data_utils import rec_to_images
+from mlops_xoxo.utils.data_utils import rec_to_images
 # Paths
 REC_PATH = "data/external/casioface/train.rec"
 IDX_PATH = "data/external/casioface/train.idx"
