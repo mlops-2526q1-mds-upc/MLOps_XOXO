@@ -12,16 +12,9 @@ import mlflow
 from dotenv import load_dotenv
 import os
 from utils.mlflow_run_decorator import mlflow_run
-
-# Load env variables
-load_dotenv()
-mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
-experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "default")
-
-# MLflow setup
-if mlflow_uri:
-    mlflow.set_tracking_uri(mlflow_uri)
-mlflow.set_experiment(experiment_name)
+# Load params
+with open("params.yaml") as f:
+    params = yaml.safe_load(f)
 
 # Device setup
 DEVICE = torch.device('mps') if getattr(torch.backends, 'mps', None) else torch.device('cpu')

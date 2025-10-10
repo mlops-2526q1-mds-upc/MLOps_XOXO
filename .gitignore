@@ -2,8 +2,13 @@
 data/*
 !data/*.dvc
 .env
-/models/
-/docs/
+# ---------------------
+# MODELS
+# ---------------------
+/models/*
+!/models/*.dvc
+
+
 # Mac OS-specific storage files
 .DS_Store
 
