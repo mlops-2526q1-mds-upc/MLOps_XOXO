@@ -211,7 +211,7 @@ def train_model():
     # Save model
     model_dir = Path('models/face_embedding')
     model_dir.mkdir(parents=True, exist_ok=True)
-    model_path = model_dir / 'facenet_epoch_last.pt'
+    model_path = model_dir / 'mobilenetv2_arcface_epoch_last.pt'
     torch.save(model.state_dict(), model_path)
     mlflow.log_artifact(str(model_path))
     mlflow.pytorch.log_model(model, 'pytorch_model')
