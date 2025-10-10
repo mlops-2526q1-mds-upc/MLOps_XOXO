@@ -2,13 +2,7 @@
 data/*
 !data/*.dvc
 .env
-# ---------------------
-# MODELS
-# ---------------------
-/models/*
-!/models/*.dvc
-
-
+/models/
 # Mac OS-specific storage files
 .DS_Store
 
@@ -89,7 +83,7 @@ instance/
 .scrapy
 
 # MkDocs documentation
-docs/site/
+#docs/site/
 
 # PyBuilder
 .pybuilder/
