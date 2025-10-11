@@ -10,7 +10,7 @@ A short description of the project.
 
 ```
 ├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
+├── Makefile           <- Makefile with convenience commands like `make run_pipeline`
 ├── README.md          <- The top-level README for developers using this project.
 ├── data
 │   ├── external       <- Data from third party sources.
@@ -37,24 +37,27 @@ A short description of the project.
 ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
 │                         generated with `pip freeze > requirements.txt`
 │
-├── setup.cfg          <- Configuration file for flake8
+├── param.yml       <- Config file for all prameter and hyperparameter
+│
+├── dvc.yaml         <- DVC Configuration file
+│
+├── mlruns       <- Log Mlflow runs
+│
+├── powermetrics_log.txt       <- Log from Code carbon
 │
 └── mlops_xoxo   <- Source code for use in this project.
     │
-    ├── __init__.py             <- Makes mlops_xoxo a Python module
+    ├── data_ingest.py             <- Script to ingest data
     │
-    ├── config.py               <- Store useful variables and configuration
+    ├── data_split.py               <- Script to properly split the data into train, validation and test set
     │
-    ├── dataset.py              <- Scripts to download or generate data
+    ├── data_valifdate.py               <- Scripts to validate the dataset and generate a report
     │
-    ├── features.py             <- Code to create features for modeling
+    ├── train.py              <- Scripts to train the model
     │
-    ├── modeling
-    │   ├── __init__.py
-    │   ├── predict.py          <- Code to run model inference with trained models
-    │   └── train.py            <- Code to train models
+    ├── eval.py             <- Code to evaluate the model
     │
-    └── plots.py                <- Code to create visualizations
+    └── test.py                <- Code to perform quality testing
 ```
 
 ---
