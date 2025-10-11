@@ -10,27 +10,74 @@ RAW_DIR = Path("data/raw")              # raw images by person
 MANIFEST_PATH = Path("data/processed/splits/manifest.json")  # manifest with splits
 OUTPUT_DIR = Path("data/processed")              # root output folder
 
-def manifest(RAW_DIR=RAW_DIR, MANIFEST_PATH=MANIFEST_PATH):
-    # Step 2: Create train/val/test manifest
-    create_manifest(RAW_DIR, MANIFEST_PATH)
-
 SPLITS = ["train", "val", "test"]
 
-def split_data(raw_dir, manifest_path, output_dir):
-    with open(manifest_path) as f:
-        manifest = json.load(f)
+def split_data():
+    """
+    Orchestrates the data splitting and manifest creation process.
+    """
+    # 1. Create a temporary "plan" based on the raw data.
+    print("Step 1: Creating a temporary splitting plan from raw data...")
+    temp_manifest_path = Path("temp_manifest.json")
+    create_manifest(RAW_DIR, temp_manifest_path)
+    with open(temp_manifest_path) as f:
+        raw_path_manifest = json.load(f)
+    os.remove(temp_manifest_path) # Clean up the temporary file
 
+    # 2. Copy files to their new locations and build the final, correct manifest.
+    print("\nStep 2: Copying files and building the final manifest...")
+    final_manifest = {'train': [], 'val': [], 'test': []}
+    
     for split in SPLITS:
-        split_dir = output_dir / split
-        for img_path in manifest.get(split, []):
-            img_path = Path(img_path)
+        split_dir = OUTPUT_DIR / split
+        
+        for img_path_str in raw_path_manifest.get(split, []):
+            img_path = Path(img_path_str)
             person_id = img_path.parent.name
-            target_dir = split_dir / person_id
-            target_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy(img_path, target_dir / img_path.name)
-        print(f"{split}: copied {len(manifest.get(split, []))} images")
+            
+            target_person_dir = split_dir / person_id
+            target_person_dir.mkdir(parents=True, exist_ok=True)
+            
+            destination_path = target_person_dir / img_path.name
+            shutil.copy(img_path, destination_path)
+            
+            final_manifest[split].append(str(destination_path))
+            
+        print(f"  - Copied {len(raw_path_manifest.get(split, []))} images to '{split}' split.")
+
+    # 3. Save the final manifest with the correct 'data/processed' paths.
+    print("\nStep 3: Saving the final manifest...")
+    MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(MANIFEST_PATH, 'w') as f:
+        json.dump(final_manifest, f, indent=2)
+
+    print(f"\n Data split and manifest creation completed!")
+    print(f"Correct manifest saved to: {MANIFEST_PATH}")
+
 
 if __name__ == "__main__":
-    manifest(RAW_DIR, MANIFEST_PATH)
-    split_data(RAW_DIR, MANIFEST_PATH, OUTPUT_DIR)
-    print("Data split completed!")
+    split_data()
+
+# def manifest(RAW_DIR=RAW_DIR, MANIFEST_PATH=MANIFEST_PATH):
+#     # Step 2: Create train/val/test manifest
+#     create_manifest(RAW_DIR, MANIFEST_PATH)
+
+
+# def split_data(raw_dir, manifest_path, output_dir):
+#     with open(manifest_path) as f:
+#         manifest = json.load(f)
+
+#     for split in SPLITS:
+#         split_dir = output_dir / split
+#         for img_path in manifest.get(split, []):
+#             img_path = Path(img_path)
+#             person_id = img_path.parent.name
+#             target_dir = split_dir / person_id
+#             target_dir.mkdir(parents=True, exist_ok=True)
+#             shutil.copy(img_path, target_dir / img_path.name)
+#         print(f"{split}: copied {len(manifest.get(split, []))} images")
+
+# if __name__ == "__main__":
+#     manifest(RAW_DIR, MANIFEST_PATH)
+#     split_data(RAW_DIR, MANIFEST_PATH, OUTPUT_DIR)
+#     print("Data split completed!")

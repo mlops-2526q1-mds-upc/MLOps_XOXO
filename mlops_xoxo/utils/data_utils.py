@@ -123,7 +123,9 @@ def create_manifest(data_dir, output_path, splits={'train': 0.7, 'val': 0.2, 'te
         for split, imgs in split_map.items():
             manifest[split].extend([str(img) for img in imgs])
 
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    output_dir = os.path.dirname(output_path)
+    if output_dir: 
+        os.makedirs(output_dir, exist_ok=True)
+        
     with open(output_path, 'w') as f:
         json.dump(manifest, f, indent=2)
-    print(f"Manifest saved to {output_path}")
