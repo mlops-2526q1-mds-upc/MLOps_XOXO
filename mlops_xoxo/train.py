@@ -1,22 +1,23 @@
 # train.py
 import os
-from dotenv import load_dotenv
-import yaml
-import torch
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
-from pathlib import Path
-from PIL import Image
 import random
-from tqdm import tqdm
+from collections import defaultdict
+from pathlib import Path
 import mlflow
 import mlflow.pytorch
-import pandas as pd
-from codecarbon import EmissionsTracker
-from collections import defaultdict
 import numpy as np
+import pandas as pd
+import torch
+import torch.nn.functional as F
+import yaml
+from codecarbon import EmissionsTracker
+from dotenv import load_dotenv
+from PIL import Image
+from torch.utils.data import Dataset, DataLoader
+from torchvision import models, transforms
+from tqdm import tqdm
 
-with open("params.yaml") as f:
+with open("params.yaml", encoding="utf-8") as f:
     params = yaml.safe_load(f)
 
 load_dotenv()
@@ -50,14 +51,16 @@ WEIGHT_DECAY = float(params['training']['weight_decay'])
 
 DATA_DIR = Path(params['dataset']['processed_dir']) / 'train'
 VAL_DIR = Path(params['dataset']['processed_dir']) / 'val'
-# Dataset and triplet sampling
+
+
 class FaceDataset(Dataset):
+    """Dataset and triplet sampling"""
     def __init__(self, root, transform=None):
         self.root = Path(root)
         self.transform = transform
         self.samples = []
         self.classes = sorted([p.name for p in self.root.iterdir() if p.is_dir()])
-        self.class_to_idx = {c:i for i,c in enumerate(self.classes)}
+        self.class_to_idx = {c: i for i, c in enumerate(self.classes)}
         for c in self.classes:
             for img in (self.root / c).glob('*.jpg'):
                 self.samples.append((str(img), self.class_to_idx[c]))
@@ -77,17 +80,19 @@ class FaceDataset(Dataset):
         return img, label
 
     def sample_triplet(self):
+        """Function that samples triplets"""
         anchor_label = random.choice(list(self.class_indices.keys()))
         anchor_idx = random.choice(self.class_indices[anchor_label])
         pos_idx = random.choice([i for i in self.class_indices[anchor_label] if i != anchor_idx])
-        neg_label = random.choice([l for l in self.class_indices.keys() if l != anchor_label])
+        neg_label = random.choice([lb for lb in self.class_indices.keys() if lb != anchor_label])
         neg_idx = random.choice(self.class_indices[neg_label])
         return anchor_idx, pos_idx, neg_idx
+
 
 # Transforms
 transform = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize([0.5,0.5,0.5],[0.5,0.5,0.5])
+    transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 ])
 
 train_ds = FaceDataset(DATA_DIR, transform=transform)
@@ -97,10 +102,10 @@ val_ds = FaceDataset(VAL_DIR, transform=transform)
 val_loader = DataLoader(val_ds, batch_size=BATCH, shuffle=False, num_workers=0)
 print(val_ds.classes)
 # Model and optimizer (MobileNetV2 + ArcFace)
-from torchvision import models
-import torch.nn.functional as F
+
 
 class MobileFace(torch.nn.Module):
+    """MobileFace model class"""
     def __init__(self, emb_size=512):
         super().__init__()
         backbone = models.mobilenet_v2(weights='IMAGENET1K_V1')
@@ -110,13 +115,16 @@ class MobileFace(torch.nn.Module):
         self.bn = torch.nn.BatchNorm1d(emb_size)
 
     def forward(self, x):
+        """Forward step"""
         x = self.backbone(x)
         x = self.pool(x).flatten(1)
         x = self.fc(x)
         x = self.bn(x)
         return F.normalize(x)
 
+
 class ArcFaceHead(torch.nn.Module):
+    """ArcFaceHead model class"""
     def __init__(self, emb_size, num_classes, scale=64.0, margin=0.5):
         super().__init__()
         self.weight = torch.nn.Parameter(torch.FloatTensor(num_classes, emb_size))
@@ -125,12 +133,14 @@ class ArcFaceHead(torch.nn.Module):
         self.margin = margin
 
     def forward(self, embeddings, labels):
-        cosine = F.linear(F.normalize(embeddings), F.normalize(self.weight))
+        """Forward step"""
+        cosine = F.linear(F.normalize(embeddings), F.normalize(self.weight))  # pylint: disable=not-callable
         theta = torch.acos(torch.clamp(cosine, -1+1e-7, 1-1e-7))
         target_logit = torch.cos(theta + self.margin)
-        one_hot = F.one_hot(labels, num_classes=cosine.size(1)).float()
+        one_hot = F.one_hot(labels, num_classes=cosine.size(1)).float()  # pylint: disable=not-callable
         logits = cosine * (1 - one_hot) + target_logit * one_hot
         return logits * self.scale
+
 
 # Model and optimizer
 NUM_CLASSES = len(train_ds.classes)
@@ -139,24 +149,24 @@ arcface = ArcFaceHead(emb_size=512, num_classes=NUM_CLASSES, scale=64.0, margin=
 optimizer = torch.optim.Adam(list(model.parameters()) + list(arcface.parameters()), lr=LR, weight_decay=WEIGHT_DECAY)
 criterion = torch.nn.CrossEntropyLoss()
 
-emissions_output_path = "reports/emissions.csv"
+EMISSIONS_OUTPUT_PATH = "reports/emissions.csv"
 Path("reports").mkdir(parents=True, exist_ok=True)
 
 
 def train_model(run_id=None):
+    """Main train model function"""
     mlflow.log_params({'batch_size': BATCH, 'epochs': EPOCHS, 'lr': LR, 'margin': MARGIN, 'weight_decay': WEIGHT_DECAY})
 
     print("\nStarting CodeCarbon Emissions Tracker.")
 
     # Initialize the tracker with a project name for better organization
     # Context manager ensures the tracker stops automatically
-    with EmissionsTracker(project_name="Face_embedding", output_file=emissions_output_path) as tracker:
-        global_step = 0 
+    with EmissionsTracker(project_name="Face_embedding", output_file=EMISSIONS_OUTPUT_PATH) as _:
         best_val_acc = 0.0
         best_val_loss = float("inf")
         best_epoch = 0
         for epoch in range(EPOCHS):
-            with mlflow.start_run(nested=True, run_name=f"epoch_{epoch}") as epoch_run:
+            with mlflow.start_run(nested=True, run_name=f"epoch_{epoch}") as _:
                 model.train()
                 total_loss = 0.0
 
@@ -211,13 +221,13 @@ def train_model(run_id=None):
         mlflow.log_metric("final_val_accuracy", val_acc)
         mlflow.log_metric("best_val_accuracy", best_val_acc)
         mlflow.log_metric("best_val_loss", best_val_loss)
-        mlflow.log_param("best_epoch", best_epoch)    
+        mlflow.log_param("best_epoch", best_epoch)
         # Log the final emissions to MLflow
-        if Path(emissions_output_path).exists(): 
+        if Path(EMISSIONS_OUTPUT_PATH).exists():
             # Read the last entry from emissions.csv to get all the details
             try:
-                df = pd.read_csv(emissions_output_path).tail(1) 
-                
+                df = pd.read_csv(EMISSIONS_OUTPUT_PATH).tail(1)
+
                 # Log the key environmental metrics
                 mlflow.log_metric('carbon_emissions_kg_co2', df['emissions'].iloc[0])
                 mlflow.log_metric('energy_consumed_kwh', df['energy_consumed'].iloc[0])
@@ -227,7 +237,6 @@ def train_model(run_id=None):
             except Exception as e:
                 print(f"Error logging CodeCarbon metrics to MLflow: {e}")
 
-    
     # --- Compute top-1 and top-5 NN accuracy on validation set ---
     print("Computing top-1 and top-5 NN accuracy on validation set...")
     model.eval()
@@ -250,7 +259,7 @@ def train_model(run_id=None):
         img = Image.open(img_path).convert('RGB')
         t = transform(img).unsqueeze(0).to(DEVICE)
         e = model(t).detach().cpu().numpy()[0]
-        sims = {k: e.dot(v) / (np.linalg.norm(e)*np.linalg.norm(v)) for k,v in gallery.items()}
+        sims = {k: e.dot(v) / (np.linalg.norm(e)*np.linalg.norm(v)) for k, v in gallery.items()}
         sorted_ids = sorted(sims, key=sims.get, reverse=True)
         pred_top1 = sorted_ids[0]
         pred_top5 = sorted_ids[:5]
@@ -301,7 +310,6 @@ def train_model(run_id=None):
     print(f'Training finished — model saved to {model_dir} and registered as {model_name}')
 
 
-
 if __name__ == "__main__":
     # Get experiment id or create one
     experiment_id = params['mlflow'].get('experiment_id')
@@ -311,7 +319,7 @@ if __name__ == "__main__":
         experiment = mlflow.get_experiment_by_name(experiment_name)
         experiment_id = experiment.experiment_id
         params['mlflow']['experiment_id'] = experiment_id
-        with open("params.yaml", "w") as f:
+        with open("params.yaml", "w", encoding="utf-8") as f:
             yaml.safe_dump(params, f)
     else:
         mlflow.set_experiment(params['mlflow'].get('experiment_name', 'face_embedding'))
@@ -319,7 +327,7 @@ if __name__ == "__main__":
     # Start top-level run with experiment_id
     with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as parent:
         params['mlflow']['run_id'] = parent.info.run_id
-        with open("params.yaml", "w") as f:
+        with open("params.yaml", "w", encoding="utf-8") as f:
             yaml.safe_dump(params, f)
 
         # Nested run for training

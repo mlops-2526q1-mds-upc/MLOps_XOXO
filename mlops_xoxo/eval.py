@@ -1,19 +1,18 @@
 # eval.py
-import yaml
-import torch
-from facenet_pytorch import InceptionResnetV1
-from torchvision import transforms
-from pathlib import Path
-from PIL import Image
-import numpy as np
-from collections import defaultdict
 import json
-import mlflow
-from dotenv import load_dotenv
 import os
+from collections import defaultdict
+from pathlib import Path
+import mlflow
+import numpy as np
+import torch
+import yaml
+from dotenv import load_dotenv
+from PIL import Image
+from torchvision import transforms
 from .train import MobileFace
 
-with open("params.yaml") as f:
+with open("params.yaml", encoding="utf-8") as f:
     params = yaml.safe_load(f)
 
 load_dotenv()
@@ -42,17 +41,20 @@ model.eval()
 # Image transform
 transform = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize([0.5,0.5,0.5],[0.5,0.5,0.5])
+    transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 ])
 
 # Load manifest
 OUT = Path(params['dataset']['processed_dir'])
-manifest = json.load(open(OUT /'splits'/ 'manifest.json'))
+with open(OUT / 'splits' / 'manifest.json', "r", encoding="utf-8") as f:
+    manifest = json.load(f)
 TEST_DIR = OUT / "test"
 
 reports_dir = Path('reports')
 
+
 def calculate_metrics(model, manifest, transform, device):
+    """Function that calculates metrics for model evaluation"""
     # Build gallery
     gallery = {}
     embs_by_id = defaultdict(list)
@@ -74,7 +76,7 @@ def calculate_metrics(model, manifest, transform, device):
         img = Image.open(img_path).convert('RGB')
         t = transform(img).unsqueeze(0).to(device)
         e = model(t).detach().cpu().numpy()[0]
-        sims = {k: e.dot(v) / (np.linalg.norm(e)*np.linalg.norm(v)) for k,v in gallery.items()}
+        sims = {k: e.dot(v) / (np.linalg.norm(e)*np.linalg.norm(v)) for k, v in gallery.items()}
         sorted_ids = sorted(sims, key=sims.get, reverse=True)
         pred_top1 = sorted_ids[0]
         pred_top5 = sorted_ids[:5]
@@ -96,8 +98,9 @@ def calculate_metrics(model, manifest, transform, device):
         "predictions": predictions
     }
 
+
 def save_results(results):
-    # This function handles logging and file writing
+    """This function handles logging and file writing"""
     print('Top-1 NN accuracy:', results['acc_top1'])
     print('Top-5 NN accuracy:', results['acc_top5'])
 
@@ -106,7 +109,7 @@ def save_results(results):
     mlflow.log_metric('top5_accuracy', results['acc_top5'])
     mlflow.log_param('eval_total', results['total'])
     mlflow.log_param('model_path', str(model_path))
-    
+
     # Save artifacts
     reports_dir = Path('reports')
     reports_dir.mkdir(parents=True, exist_ok=True)
@@ -116,7 +119,7 @@ def save_results(results):
         f.write(f"top5_accuracy: {results['acc_top5']}\n")
         f.write(f"eval_total: {results['total']}\n")
     mlflow.log_artifact(str(summary_file))
-    
+
     mlflow.set_tags({
         "model_type": "MobileNetV2+ArcFace",
         "test_dataset": str(TEST_DIR),
@@ -125,11 +128,13 @@ def save_results(results):
     })
 
     predictions_file = reports_dir / 'eval_predictions.json'
-    with open(predictions_file, 'w') as f:
+    with open(predictions_file, 'w', encoding="utf-8") as f:
         json.dump(results['predictions'], f, indent=2)
     mlflow.log_artifact(str(predictions_file))
 
+
 def evaluate_model():
+    """Main orchestrator function for model evaluation"""
     # Get experiment id or create one
     experiment_id = params['mlflow'].get('experiment_id')
     if not experiment_id:
@@ -138,15 +143,15 @@ def evaluate_model():
         experiment = mlflow.get_experiment_by_name(experiment_name)
         experiment_id = experiment.experiment_id
         params['mlflow']['experiment_id'] = experiment_id
-        with open("params.yaml", "w") as f:
+        with open("params.yaml", "w", encoding="utf-8") as f:
             yaml.safe_dump(params, f)
     else:
         mlflow.set_experiment(params['mlflow'].get('experiment_name', 'face_embedding'))
 
     # Start top-level run with experiment_id
     parent_run_id = params['mlflow']['run_id']
-    with mlflow.start_run(experiment_id=experiment_id, run_id=parent_run_id) as parent:
-        with open("params.yaml", "w") as f:
+    with mlflow.start_run(experiment_id=experiment_id, run_id=parent_run_id) as _:
+        with open("params.yaml", "w", encoding="utf-8") as f:
             yaml.safe_dump(params, f)
 
         # Nested run for training

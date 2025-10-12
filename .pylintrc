@@ -22,7 +22,6 @@ max-line-length=120
 # List of modules that can be found by Pylint
 init-hook=
 load-plugins=
-search-sugared-tokens=yes
 # Specify the target directories for Pylint to analyze
 # Pylint needs to know where your source code is
 ignore=

@@ -53,14 +53,14 @@ stages:
       nfiles: 10000
     - path: mlops_xoxo/data_split.py
       hash: md5
-      md5: 326d81faeaf6d88d2955cb927555c3d2
-      size: 1239
+      md5: b186e26320e6b94261d6278a18c448e1
+      size: 2177
     outs:
     - path: data/processed
       hash: md5
-      md5: c7fab794166c9b567de58a74b675c6b8.dir
-      size: 54527737
-      nfiles: 10001
+      md5: 546690ca29d5fa16b7d3e926509aa4d2.dir
+      size: 79785984
+      nfiles: 14642
   train:
     cmd: python mlops_xoxo/train.py > mlflow_run_id.txt
     deps:

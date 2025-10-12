@@ -16,12 +16,12 @@ if mlflow_username and mlflow_password:
     os.environ["MLFLOW_TRACKING_PASSWORD"] = mlflow_password
 
 # --- Create a test experiment ---
-experiment_name = "Nested_Run_Test"
-mlflow.set_experiment(experiment_name)
+EXPERIMENT_NAME = "Nested_Run_Test"
+mlflow.set_experiment(EXPERIMENT_NAME)
 
 # --- Create nested runs ---
 print(f"Tracking URI: {mlflow.get_tracking_uri()}")
-print(f"Experiment: {experiment_name}")
+print(f"Experiment: {EXPERIMENT_NAME}")
 
 with mlflow.start_run(run_name="parent_test_run") as parent:
     print(f"Started parent run: {parent.info.run_id}")
@@ -37,5 +37,5 @@ with mlflow.start_run(run_name="parent_test_run") as parent:
                 mlflow.log_metric("train_loss", 0.1 * (epoch + 1), step=epoch)
                 mlflow.log_metric("val_loss", 0.2 * (epoch + 1), step=epoch)
 
-print("\n✅ Done. Check the Dagshub MLflow UI for experiment 'Nested_Run_Test'.")
-print("⚠️ Make sure to enable the 'Show nested runs' toggle in the UI to see the hierarchy.")
+print("\n Done. Check the Dagshub MLflow UI for experiment 'Nested_Run_Test'.")
+print("Make sure to enable the 'Show nested runs' toggle in the UI to see the hierarchy.")
