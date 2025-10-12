@@ -75,6 +75,22 @@ The pipeline is reproducible with **DVC** and experiment tracking is handled wit
 
 ## 1. Setup environment
 
+git clone
+
+pip install uv
+
+uv venv
+
+uv sync
+
+config.local with credential to access dagshub
+
+dvc pull
+
+config in param.yaml (optional)
+
+make run_pipeline
+
 ```bash
 # clone your repo if not already
 git clone <your-repo>

@@ -75,28 +75,28 @@ stages:
       size: 13609
     - path: params.yaml
       hash: md5
-      md5: 59566bb107446af8bd2369a152a141f2
-      size: 615
+      md5: cea29f12363b7a1314959cd37aecf572
+      size: 619
     params:
       params.yaml:
         training:
           batch_size: 64
           device: mps
           embedding_size: 512
-          epochs: 3
+          epochs: 200
           lr: 0.0001
           margin: 0.2
           weight_decay: 0.0001
     outs:
     - path: models/face_embedding
       hash: md5
-      md5: a549191866b0b505df3ff87c5e4ae67b.dir
+      md5: 4359b01037a078e198f732d182a593b4.dir
       size: 11776372
       nfiles: 1
     - path: reports/emissions.csv
       hash: md5
-      md5: 427715e1e610bb7b7fc68173426a38a4
-      size: 766
+      md5: c36eba4469f664db8c785971058c47b1
+      size: 762
   eval:
     cmd: python mlops_xoxo/eval.py
     deps:
@@ -111,21 +111,21 @@ stages:
       size: 5737
     - path: models/face_embedding
       hash: md5
-      md5: a549191866b0b505df3ff87c5e4ae67b.dir
+      md5: 4359b01037a078e198f732d182a593b4.dir
       size: 11776372
       nfiles: 1
     - path: params.yaml
       hash: md5
-      md5: 59566bb107446af8bd2369a152a141f2
-      size: 615
+      md5: cea29f12363b7a1314959cd37aecf572
+      size: 619
     outs:
     - path: reports/eval_predictions.json
       hash: md5
-      md5: 11f025ce0e270ddccc1ee950e5dd8805
+      md5: 170cbac3c8b344ac55f18f8e62d40410
       size: 243717
     - path: reports/eval_summary.txt
       hash: md5
-      md5: e9b32f0e2f47d6e60f4e7c382882e16b
+      md5: 9ab853074c0568c97c41f4e746fd4371
       size: 85
   register_model:
     cmd: "export MLFLOW_RUN_ID=$(cat mlflow_run_id.txt | grep 'MLFLOW_RUN_ID:' | cut
