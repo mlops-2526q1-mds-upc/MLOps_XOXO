@@ -9,7 +9,7 @@ dataset:
 mlflow:
   experiment_id: '4'
   experiment_name: face_embedding
-  run_id: 8e039a4ca1d04a39895c121562a590b9
+  run_id: 47ec7d36aaae40febeafeed956adc321
   run_name: face_embedding_3_epochs
   tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
 preprocessing:

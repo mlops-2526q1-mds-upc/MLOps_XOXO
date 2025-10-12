@@ -1,0 +1,12 @@
+=== Person folder check ===
+Found 57 persons
+Total images: 10000
+Average images per person: 175.44
+
+=== Image integrity check ===
+All images are valid!
+
+=== Manifest check ===
+train: 6974 images
+val: 1975 images
+test: 1051 images

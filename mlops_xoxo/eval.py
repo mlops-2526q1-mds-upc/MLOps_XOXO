@@ -10,7 +10,7 @@ import yaml
 from dotenv import load_dotenv
 from PIL import Image
 from torchvision import transforms
-from .train import MobileFace
+from train import MobileFace
 
 with open("params.yaml", encoding="utf-8") as f:
     params = yaml.safe_load(f)

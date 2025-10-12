@@ -17,7 +17,7 @@ stages:
       size: 2726043620
     - path: mlops_xoxo/data_ingest.py
       hash: md5
-      md5: 4e38caa49f7da7685373d6fcb7b61fbb
+      md5: 0178565d2db38e8391a153710e3a0095
       size: 435
     outs:
     - path: data/raw
@@ -35,13 +35,13 @@ stages:
       nfiles: 10000
     - path: mlops_xoxo/data_validate.py
       hash: md5
-      md5: 6732642e41a6f0a2251ea535eb078f4a
-      size: 2378
+      md5: 1c5789c1633d13db7ad3df126e977ce4
+      size: 2739
     outs:
     - path: docs
       hash: md5
-      md5: e35169b16cffac93df180700298927d1.dir
-      size: 194
+      md5: 96ee1fbc4eac3fe8b2a34f605fc229bd.dir
+      size: 229
       nfiles: 1
   split:
     cmd: python mlops_xoxo/data_split.py
@@ -53,29 +53,29 @@ stages:
       nfiles: 10000
     - path: mlops_xoxo/data_split.py
       hash: md5
-      md5: b186e26320e6b94261d6278a18c448e1
-      size: 2177
+      md5: 606d8bb55310a97f0954609413aea4fe
+      size: 2166
     outs:
     - path: data/processed
       hash: md5
-      md5: 546690ca29d5fa16b7d3e926509aa4d2.dir
-      size: 79785984
-      nfiles: 14642
+      md5: eb3bcf78934442af201df7514f9b90fd.dir
+      size: 54642736
+      nfiles: 10001
   train:
     cmd: python mlops_xoxo/train.py > mlflow_run_id.txt
     deps:
     - path: data/processed/train
       hash: md5
-      md5: 0a9f6f571f5c2351087a0e3321a3d058.dir
-      size: 37825416
+      md5: 4ac4c8d19815cb820e949cc36854fe55.dir
+      size: 37781098
       nfiles: 6974
     - path: mlops_xoxo/train.py
       hash: md5
-      md5: b69a1edbedce035d844102e5a1bf74c9
-      size: 13353
+      md5: cbb9af958d6618721e592322726b9e32
+      size: 13609
     - path: params.yaml
       hash: md5
-      md5: 2a1497689c8b20abc2ff16ef7250be89
+      md5: 59566bb107446af8bd2369a152a141f2
       size: 615
     params:
       params.yaml:
@@ -90,36 +90,43 @@ stages:
     outs:
     - path: models/face_embedding
       hash: md5
-      md5: 5fd102a942237fde062736773bb135f6.dir
+      md5: a549191866b0b505df3ff87c5e4ae67b.dir
       size: 11776372
       nfiles: 1
+    - path: reports/emissions.csv
+      hash: md5
+      md5: 427715e1e610bb7b7fc68173426a38a4
+      size: 766
   eval:
     cmd: python mlops_xoxo/eval.py
     deps:
     - path: data/processed/val
       hash: md5
-      md5: f51b33ab25a5807cb008e45f3edf3992.dir
-      size: 10721750
+      md5: ac4974dcc1ca0214c2f1850995d16564.dir
+      size: 10708305
       nfiles: 1975
     - path: mlops_xoxo/eval.py
       hash: md5
-      md5: 93c0e3d52386ce9f7ecf83fe41ab546c
-      size: 5197
+      md5: bc23b922d8346287db9a2facb6f5acda
+      size: 5737
     - path: models/face_embedding
       hash: md5
-      md5: 5fd102a942237fde062736773bb135f6.dir
+      md5: a549191866b0b505df3ff87c5e4ae67b.dir
       size: 11776372
       nfiles: 1
     - path: params.yaml
       hash: md5
-      md5: 2a1497689c8b20abc2ff16ef7250be89
+      md5: 59566bb107446af8bd2369a152a141f2
       size: 615
     outs:
-    - path: reports
+    - path: reports/eval_predictions.json
       hash: md5
-      md5: d460cd6e26365b89be238df60ec21365.dir
-      size: 232241
-      nfiles: 2
+      md5: 11f025ce0e270ddccc1ee950e5dd8805
+      size: 243717
+    - path: reports/eval_summary.txt
+      hash: md5
+      md5: e9b32f0e2f47d6e60f4e7c382882e16b
+      size: 85
   register_model:
     cmd: "export MLFLOW_RUN_ID=$(cat mlflow_run_id.txt | grep 'MLFLOW_RUN_ID:' | cut
       -d ':' -f 2) \npython mlops_xoxo/register_model.py \n"
