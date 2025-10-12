@@ -1,8 +1,3 @@
----
-
-## 🧩 **Dataset Card — `casia_webface.md`**
-
-```markdown
 <div align="center">
 
 # Dataset Card for CASIA-WebFace  
