@@ -38,7 +38,7 @@ def validate_images(raw_dir):
             continue
         for img_path in p.glob("*.jpg"):
             img = cv2.imread(str(img_path))
-            if img is None:
+            if img is None or img.size == 0:
                 corrupted.append(str(img_path))
     return corrupted
 
@@ -55,7 +55,7 @@ def check_manifest(manifest_path):
         lines.append(f"{split}: {len(images)} images")
     return lines
 
-if __name__ == "__main__":
+def data_validate_main():
     report_lines = []
     report_lines.append("=== Person folder check ===")
     report_lines += check_person_folders(RAW_DIR)
@@ -74,3 +74,6 @@ if __name__ == "__main__":
         f.write("\n".join(report_lines))
 
     print(f"Data validation report saved to {report_path}")
+
+if __name__ == "__main__":
+    data_validate_main()

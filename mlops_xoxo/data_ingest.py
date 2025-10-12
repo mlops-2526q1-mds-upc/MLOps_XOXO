@@ -7,7 +7,7 @@ OUTPUT_DIR = "data/raw"
 LIMIT = 10000  # Set an integer for debugging
 
 def main():
-    # Step 1: Extract images
+    # Extract images
     rec_to_images(REC_PATH, IDX_PATH, LST_PATH, OUTPUT_DIR, limit=LIMIT, show_progress=True)
 
 if __name__ == "__main__":

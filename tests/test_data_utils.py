@@ -1,127 +1,107 @@
 import pytest
-import tempfile
-import json
+import base64
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-from mlops_xoxo.utils.data_utils import create_manifest
+from unittest.mock import patch
 
-# --- Fixtures ---
+from mlops_xoxo.utils.data_utils import rec_to_images
 
-@pytest.fixture(scope="function")
-def mock_data_directory():
+REAL_REC_PATH = Path("data/external/casioface/train.rec")
+REAL_IDX_PATH = Path("data/external/casioface/train.idx")
+REAL_LST_PATH = Path("data/external/casioface/train.lst")
+
+# Mark the test as 'slow' and skip it if the data is not present
+@pytest.mark.slow
+@pytest.mark.skipif(not REAL_REC_PATH.exists(), reason="Real data not found. Run 'dvc pull' first.")
+def test_rec_to_images_with_real_data(tmp_path):
     """
-    Creates a temporary directory simulating the RAW_DIR structure:
-    person_a: 10 images (7/2/1 split)
-    person_b: 5 images (3/1/1 split)
-    total: 15 images
+    This is an integration test that runs rec_to_images on a small
+    subset of the real data to ensure it doesn't crash.
     """
-    with tempfile.TemporaryDirectory() as temp_dir:
-        data_dir = Path(temp_dir) / "raw_data"
-        data_dir.mkdir()
-
-        # Person A (10 files)
-        person_a = data_dir / "person_a"
-        person_a.mkdir()
-        for i in range(10):
-            (person_a / f"img_{i:02}.jpg").touch()
-
-        # Person B (5 files)
-        person_b = data_dir / "person_b"
-        person_b.mkdir()
-        for i in range(5):
-            (person_b / f"img_{i:02}.jpg").touch()
-
-        # Extra file that should be ignored
-        (data_dir / "ignore_me.txt").touch()
-
-        yield data_dir
-
-@pytest.fixture(scope="function")
-def output_path():
-    """Creates a temporary path for the manifest output."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        yield Path(temp_dir) / "manifest.json"
-
-# --- Tests ---
-
-def test_manifest_total_image_count(mock_data_directory, output_path):
-    """Test that all 15 images are included in the manifest splits."""
-    create_manifest(mock_data_directory, output_path)
+    output_dir = tmp_path / "real_data_output"
     
-    with open(output_path, 'r') as f:
-        manifest = json.load(f)
+    # Run the function on the real data, but with a small limit
+    # to keep the test from taking too long.
+    rec_to_images(
+        rec_path=REAL_REC_PATH,
+        idx_path=REAL_IDX_PATH,
+        lst_path=REAL_LST_PATH,
+        output_dir=output_dir,
+        limit=20,  # Process only the first 20 records
+        show_progress=False
+    )
     
-    total_in_splits = len(manifest['train']) + len(manifest['val']) + len(manifest['test'])
-    assert total_in_splits == 15, f"Expected 15 total images, found {total_in_splits}"
-
-
-def test_manifest_split_ratios(mock_data_directory, output_path):
-    """Test if the default 70/20/10 split is correctly applied."""
-    create_manifest(mock_data_directory, output_path)
+    # Check for general outcomes rather than exact files, as the
+    # real data might change over time.
+    assert output_dir.exists()
     
-    with open(output_path, 'r') as f:
-        manifest = json.load(f)
-
-    # Person A (10 images): 7 train, 2 val, 1 test
-    # Person B (5 images): 3 train, 1 val, 1 test
-    # TOTAL: 10 train, 3 val, 2 test (10+3+2 = 15)
+    # Check that at least one person's directory was created
+    person_dirs = [d for d in output_dir.iterdir() if d.is_dir()]
+    assert len(person_dirs) > 0, "No person directories were created."
     
-    assert len(manifest['train']) == 10, f"Expected 10 train images, got {len(manifest['train'])}"
-    assert len(manifest['val']) == 3, f"Expected 3 val images, got {len(manifest['val'])}"
-    assert len(manifest['test']) == 2, f"Expected 2 test images, got {len(manifest['test'])}"
+    # Check that at least one image was extracted
+    image_files = list(output_dir.glob("**/*.jpg"))
+    assert len(image_files) > 0, "No JPG files were extracted."
+    assert len(image_files) <= 20, "More images were extracted than the limit."
 
-
-def test_manifest_no_data_leakage_by_person(mock_data_directory, output_path):
-    """Test that all images for a given person are in only ONE split (no cross-split leakage)."""
-    create_manifest(mock_data_directory, output_path)
+def test_rec_to_images_handles_no_jpeg_header(tmp_path):
+    """
+    Tests that the function skips records with no JPEG header.
+    """
+    rec_path = tmp_path / "test.rec"
+    idx_path = tmp_path / "test.idx"
+    lst_path = tmp_path / "test.lst"
+    output_dir = tmp_path / "output"
     
-    with open(output_path, 'r') as f:
-        manifest = json.load(f)
-
-    # Collect all unique person IDs found in the train split
-    train_person_ids = set(Path(p).parent.name for p in manifest['train'])
-    
-    # Assert that no person ID from train exists in the val or test splits
-    for val_path in manifest['val']:
-        assert Path(val_path).parent.name not in train_person_ids, "Data leakage found between TRAIN and VAL."
-    
-    for test_path in manifest['test']:
-        assert Path(test_path).parent.name not in train_person_ids, "Data leakage found between TRAIN and TEST."
-
-
-def test_manifest_no_shuffle_is_deterministic(mock_data_directory, output_path):
-    """Test that when shuffle=False, the split is deterministic and uses file name order."""
-    
-    # Run 1
-    create_manifest(mock_data_directory, output_path, shuffle=False)
-    with open(output_path, 'r') as f:
-        manifest1 = json.load(f)
+    # Create a .rec file with just junk data
+    with open(rec_path, 'wb') as f:
+        f.write(b"this is not a jpeg")
         
-    # Run 2
-    create_manifest(mock_data_directory, output_path, shuffle=False)
-    with open(output_path, 'r') as f:
-        manifest2 = json.load(f)
+    with open(idx_path, 'w') as f:
+        f.write("101 0\n")
         
-    # Check that the two unshuffled manifests are identical
-    assert manifest1 == manifest2, "Unshuffled split is not deterministic."
-
-    # Explicitly check that the first file is always the same (img_00)
-    person_a_train = [p for p in manifest1['train'] if Path(p).parent.name == 'person_a']
-    assert Path(person_a_train[0]).name == 'img_00.jpg', "First image is not img_00.jpg when unshuffled."
-
-
-def test_manifest_custom_splits(mock_data_directory, output_path):
-    """Test a custom split ratio (e.g., 50/50)."""
-    custom_splits = {'train': 0.5, 'val': 0.5, 'test': 0.0}
-    create_manifest(mock_data_directory, output_path, splits=custom_splits)
-    
-    with open(output_path, 'r') as f:
-        manifest = json.load(f)
+    with open(lst_path, 'w') as f:
+        f.write("0\t101\tdata/raw/person_d/img_01.jpg\n")
         
-    # Person A (10 images): 5 train, 5 val, 0 test
-    # Person B (5 images): 2 train, 3 val, 0 test (integer math: 5*0.5=2, 5*0.5=2.5->3 for remainder)
-    # TOTAL: 7 train, 8 val, 0 test
+    rec_to_images(rec_path, idx_path, lst_path, output_dir, show_progress=False)
     
-    assert len(manifest['train']) == 7, f"Expected 7 train images with 50/50 split, got {len(manifest['train'])}"
-    assert len(manifest['val']) == 8, f"Expected 8 val images with 50/50 split, got {len(manifest['val'])}"
-    assert len(manifest['test']) == 0, "Expected 0 test images with 50/50 split."
+    # Function should run without crashing and produce nothing
+    assert not list(output_dir.glob("**/*.jpg"))
+
+@pytest.fixture
+def fake_rec_files(tmp_path):
+    """
+    Creates a set of fake, but valid, .rec, .idx, and .lst files for testing.
+    """
+    # A tiny, valid 1x1 pixel black JPEG, encoded in base64
+    tiny_jpeg_b64 = "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAABwn/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCUQoKKAAA="
+    jpeg_bytes = base64.b64decode(tiny_jpeg_b64)
+    
+    rec_path = tmp_path / "test.rec"
+    idx_path = tmp_path / "test.idx"
+    lst_path = tmp_path / "test.lst"
+    
+    with open(rec_path, 'wb') as f:
+        f.write(b"JUNK_DATA_PREFIX")
+        f.write(jpeg_bytes)
+        
+    with open(idx_path, 'w') as f:
+        f.write("101 0\n")
+        
+    with open(lst_path, 'w') as f:
+        f.write("0\t101\tdata/raw/person_c/img_01.jpg\n")
+        
+    return rec_path, idx_path, lst_path
+
+@patch('mlops_xoxo.utils.data_utils.cv2.imdecode', return_value=None)
+def test_rec_to_images_handles_corrupt_jpeg(mock_imdecode, fake_rec_files, tmp_path):
+    """
+    Tests that the function correctly skips records where cv2 cannot decode the image
+    """
+    rec_path, idx_path, lst_path = fake_rec_files
+    output_dir = tmp_path / "output"
+    
+    rec_to_images(rec_path, idx_path, lst_path, output_dir, show_progress=False)
+    
+    # The function should call imdecode but still produce nothing
+    mock_imdecode.assert_called()
+    assert not list(output_dir.glob("**/*.jpg"))

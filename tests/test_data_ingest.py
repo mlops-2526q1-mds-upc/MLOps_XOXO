@@ -1,50 +1,32 @@
-import pytest
-from unittest.mock import patch, MagicMock
-import sys
-DATA_INGEST_SCRIPT_PATH = 'mlops_xoxo.data_ingest'
 
-# The main function in data_ingest.py is called implicitly upon execution due 
-# to the standard Python __name__ == "__main__" block calling main().
-# Therefore, importing the module executes the script's logic for the test.
+from unittest.mock import patch
 
-def test_main_calls_rec_to_images_with_correct_params():
+DATA_INGEST_SCRIPT_PATH = "mlops_xoxo.data_ingest"
+
+def test_main_calls_rec_to_images_correctly():
     """
-    Tests that the data_ingest script's main function correctly calls
-    rec_to_images with all the defined constants (paths and limit).
+    Tests that the main() function in data_ingest.py calls the
+    rec_to_images utility with the  parameters.
     """
-    
-    # We mock the function from the UTILS module that data_ingest imports
-    # The full path is mlops_xoxo.utils.data_utils.rec_to_images
+    # We mock the utility function that the script calls
+    # This isolates our test to only the logic within data_ingest.py
     mock_target = 'mlops_xoxo.utils.data_utils.rec_to_images'
     
     with patch(mock_target) as mock_rec_to_images:
         
-        # We must delete the module from sys.modules to force a fresh import
-        # and execute the main function logic when we import it.
-        if DATA_INGEST_SCRIPT_PATH in sys.modules:
-            del sys.modules[DATA_INGEST_SCRIPT_PATH]
-            
-        # Execute the script's entry point
-        import mlops_xoxo.data_ingest 
+        from mlops_xoxo import data_ingest
         
-        # Define the expected call arguments from the data_ingest.py file
-        # REC_PATH, IDX_PATH, LST_PATH, OUTPUT_DIR are constants in the file.
-        expected_rec_path = "data/external/casioface/train.rec"
-        expected_idx_path = "data/external/casioface/train.idx"
-        expected_lst_path = "data/external/casioface/train.lst"
-        expected_output_dir = "data/raw"
-        expected_limit = 10000 
-
-        # Assert the function was called exactly once
+        data_ingest.main()
+        
+        # Check that the mocked utility was called correctly 
         mock_rec_to_images.assert_called_once()
         
-        # Assert the function was called with the correct keyword arguments
-        mock_rec_to_images.assert_called_with(
-            expected_rec_path,
-            expected_idx_path,
-            expected_lst_path,
-            expected_output_dir,
-            limit=expected_limit,
+        # Check that it was called with the exact arguments defined in the script
+        mock_rec_to_images.assert_called_once_with(
+            "data/external/casioface/train.rec",
+            "data/external/casioface/train.idx",
+            "data/external/casioface/train.lst",
+            "data/raw",
+            limit=10000,
             show_progress=True
         )
-

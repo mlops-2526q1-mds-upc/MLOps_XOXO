@@ -50,6 +50,8 @@ OUT = Path(params['dataset']['processed_dir'])
 manifest = json.load(open(OUT /'splits'/ 'manifest.json'))
 TEST_DIR = OUT / "test"
 
+reports_dir = Path('reports')
+
 def calculate_metrics(model, manifest, transform, device):
     # Build gallery
     gallery = {}
@@ -107,7 +109,7 @@ def save_results(results):
     
     # Save artifacts
     reports_dir = Path('reports')
-    reports_dir.mkdir(exist_ok=True)
+    reports_dir.mkdir(parents=True, exist_ok=True)
     summary_file = reports_dir / 'eval_summary.txt'
     with open(summary_file, 'w') as f:
         f.write(f"top1_accuracy: {results['acc_top1']}\n")
@@ -128,13 +130,6 @@ def save_results(results):
     mlflow.log_artifact(str(predictions_file))
 
 def evaluate_model():
-    # This function orchestrates the model evaluation and logging
-
-    results = calculate_metrics(model, manifest, transform, DEVICE)
-    save_results(results)
-
-
-if __name__ == "__main__":
     # Get experiment id or create one
     experiment_id = params['mlflow'].get('experiment_id')
     if not experiment_id:
@@ -156,4 +151,9 @@ if __name__ == "__main__":
 
         # Nested run for training
         with mlflow.start_run(nested=True, run_name="evaluate_model"):
-            evaluate_model()
+            results = calculate_metrics(model, manifest, transform, DEVICE)
+            save_results(results)
+
+
+if __name__ == "__main__":
+    evaluate_model()
