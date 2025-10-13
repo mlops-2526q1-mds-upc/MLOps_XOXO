@@ -9,8 +9,8 @@ dataset:
 mlflow:
   experiment_id: '4'
   experiment_name: face_embedding
-  run_id: 8e039a4ca1d04a39895c121562a590b9
-  run_name: face_embedding_3_epochs
+  run_id: a90bc793e451424fa50694dee3032877
+  run_name: face_embedding_200_epochs
   tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
 preprocessing:
   image_size: 160
@@ -22,7 +22,7 @@ training:
   batch_size: 64
   device: mps
   embedding_size: 512
-  epochs: 3
+  epochs: 200
   lr: 0.0001
   margin: 0.2
   weight_decay: 0.0001

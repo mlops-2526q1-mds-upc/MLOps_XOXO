@@ -7,4 +7,6 @@ Average images per person: 175.44
 All images are valid!
 
 === Manifest check ===
-Manifest not found
+train: 6974 images
+val: 1975 images
+test: 1051 images

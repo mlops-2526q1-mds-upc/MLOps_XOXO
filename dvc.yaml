@@ -35,6 +35,7 @@ stages:
       - training
     outs:
       - models/face_embedding
+      - reports/emissions.csv
 
   eval:
     cmd: python mlops_xoxo/eval.py
@@ -44,4 +45,5 @@ stages:
       - data/processed/val
       - params.yaml
     outs:
-      - reports
+      - reports/eval_predictions.json
+      - reports/eval_summary.txt

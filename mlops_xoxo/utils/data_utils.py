@@ -1,6 +1,5 @@
 import os
 import cv2
-import struct
 import numpy as np
 import re
 import json
@@ -70,7 +69,6 @@ def rec_to_images(rec_path, idx_path, lst_path, output_dir, limit=None, show_pro
         keys = keys[:limit]
 
     if show_progress:
-        from tqdm import tqdm
         keys_iter = tqdm(keys, desc="Extracting images")
     else:
         keys_iter = keys
@@ -98,11 +96,10 @@ def rec_to_images(rec_path, idx_path, lst_path, output_dir, limit=None, show_pro
 
     reader.close()
     print(f"Images extracted to {output_dir}")
-    
+
+
 def create_manifest(data_dir, output_path, splits={'train': 0.7, 'val': 0.2, 'test': 0.1}, shuffle=True):
-    """
-    Create train/val/test manifest.json from per-person folders.
-    """
+    """Create train/val/test manifest.json from per-person folders."""
     data_dir = Path(data_dir)
     manifest = {'train': [], 'val': [], 'test': []}
 
@@ -123,7 +120,9 @@ def create_manifest(data_dir, output_path, splits={'train': 0.7, 'val': 0.2, 'te
         for split, imgs in split_map.items():
             manifest[split].extend([str(img) for img in imgs])
 
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+
     with open(output_path, 'w') as f:
         json.dump(manifest, f, indent=2)
-    print(f"Manifest saved to {output_path}")
