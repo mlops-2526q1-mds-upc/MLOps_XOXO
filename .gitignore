@@ -195,3 +195,5 @@ cython_debug/
 
 /mlruns/
 powermetrics_log.txt
+
+/data
