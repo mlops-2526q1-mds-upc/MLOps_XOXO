@@ -1,7 +1,7 @@
 dataset:
-  external_dir: data/external/face_embedding
-  processed_dir: data/processed/face_embedding
-  raw_dir: data/raw/face_embedding
+  external_dir: data/external
+  processed_dir: data/processed
+  raw_dir: data/raw
   split:
     test: 0.15
     train: 0.7
@@ -10,7 +10,7 @@ mlflow:
   experiment_id: '4'
   experiment_name: face_embedding
   run_id: a90bc793e451424fa50694dee3032877
-  run_name: face_embedding_2_epochs
+  run_name: face_embedding_200_epochs
   tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
 preprocessing:
   image_size: 160
@@ -22,7 +22,7 @@ training:
   batch_size: 64
   device: mps
   embedding_size: 512
-  epochs: 2
+  epochs: 200
   lr: 0.0001
   margin: 0.2
   weight_decay: 0.0001

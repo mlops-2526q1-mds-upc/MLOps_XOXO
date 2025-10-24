@@ -17,9 +17,9 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import models, transforms
 from tqdm import tqdm
 
-with open("params.yaml", encoding="utf-8") as f:
+with open("pipelines/face_embedding/params.yaml", encoding="utf-8") as f:
     params = yaml.safe_load(f)
-
+    
 load_dotenv()
 mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
 if mlflow_uri:
@@ -149,8 +149,8 @@ arcface = ArcFaceHead(emb_size=512, num_classes=NUM_CLASSES, scale=64.0, margin=
 optimizer = torch.optim.Adam(list(model.parameters()) + list(arcface.parameters()), lr=LR, weight_decay=WEIGHT_DECAY)
 criterion = torch.nn.CrossEntropyLoss()
 
-EMISSIONS_OUTPUT_PATH = "reports/emissions.csv"
-Path("reports").mkdir(parents=True, exist_ok=True)
+EMISSIONS_OUTPUT_PATH = "reports/face_embedding/emissions.csv"
+Path("reports/face_embedding").mkdir(parents=True, exist_ok=True)
 
 
 def train_model(run_id=None):

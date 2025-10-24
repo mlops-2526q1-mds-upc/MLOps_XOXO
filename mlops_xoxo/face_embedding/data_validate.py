@@ -3,9 +3,9 @@ import json
 from pathlib import Path
 import cv2
 
-RAW_DIR = "data/raw"           # per-person folders
-MANIFEST_PATH = "data/processed/splits/manifest.json"
-DOC_DIR = "docs"           # folder to save reports
+RAW_DIR = "data/raw/face_embedding"           # per-person folders
+MANIFEST_PATH = "data/processed/face_embedding/splits/manifest.json"
+DOC_DIR = "docs/face_embedding"           # folder to save reports
 
 os.makedirs(DOC_DIR, exist_ok=True)
 report_path = os.path.join(DOC_DIR, "data_validation_report.txt")

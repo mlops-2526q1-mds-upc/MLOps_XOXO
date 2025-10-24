@@ -1,10 +1,11 @@
 from utils.data_utils import rec_to_images
 
+
 # Paths
-REC_PATH = "data/external/casioface/train.rec"
-IDX_PATH = "data/external/casioface/train.idx"
-LST_PATH = "data/external/casioface/train.lst"
-OUTPUT_DIR = "data/raw"
+REC_PATH = "data/external/face_embedding/casioface/train.rec"
+IDX_PATH = "data/external/face_embedding/casioface/train.idx"
+LST_PATH = "data/external/face_embedding/casioface/train.lst"
+OUTPUT_DIR = "data/raw/face_embedding"
 LIMIT = 10000  # Set an integer for debugging
 
 

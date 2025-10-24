@@ -150,3 +150,5 @@ stages:
           lr: 0.0001
           margin: 0.2
           weight_decay: 0.0001
+  face_embedding_pipeline:
+    cmd: dvc repro pipelines/face_embedding/dvc.yaml

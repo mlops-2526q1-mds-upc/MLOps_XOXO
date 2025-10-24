@@ -12,7 +12,7 @@ from PIL import Image
 from torchvision import transforms
 from train import MobileFace
 
-with open("params.yaml", encoding="utf-8") as f:
+with open("pipelines/face_embedding/params.yaml", encoding="utf-8") as f:
     params = yaml.safe_load(f)
 
 load_dotenv()
@@ -50,7 +50,7 @@ with open(OUT / 'splits' / 'manifest.json', "r", encoding="utf-8") as f:
     manifest = json.load(f)
 TEST_DIR = OUT / "test"
 
-reports_dir = Path('reports')
+reports_dir = Path('reports/face_embedding')
 
 
 def calculate_metrics(model, manifest, transform, device):
@@ -111,7 +111,7 @@ def save_results(results):
     mlflow.log_param('model_path', str(model_path))
 
     # Save artifacts
-    reports_dir = Path('reports')
+    reports_dir = Path('reports/face_embedding')
     reports_dir.mkdir(parents=True, exist_ok=True)
     summary_file = reports_dir / 'eval_summary.txt'
     with open(summary_file, 'w') as f:

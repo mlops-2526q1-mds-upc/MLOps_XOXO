@@ -1,0 +1,54 @@
+stages:
+  ingest:
+    wdir: ../..
+    cmd: python mlops_xoxo/fake_classification/data_ingest.py
+    deps:
+      - mlops_xoxo/fake_classification/data_ingest.py
+      - data/external/fake_classification/casioface/train.rec
+      - data/external/fake_classification/casioface/train.idx
+      - data/external/fake_classification/casioface/train.lst
+    outs:
+      - data/raw/fake_classification
+
+  validate:
+    wdir: ../..
+    cmd: python mlops_xoxo/fake_classification/data_preprocess.py
+    deps:
+      - mlops_xoxo/fake_classification/data_preprocess.py
+      - data/raw/fake_classification
+    outs:
+      - docs/fake_classification
+
+  split:
+    wdir: ../..
+    cmd: python mlops_xoxo/fake_classification/data_split.py
+    deps:
+      - mlops_xoxo/fake_classification/data_split.py
+      - data/raw/fake_classification
+    outs:
+      - data/processed/fake_classification
+
+  train:
+    wdir: ../..
+    cmd: python mlops_xoxo/fake_classification/train.py > mlflow_run_id.txt
+    deps:
+      - mlops_xoxo/fake_classification/train.py
+      - data/processed/fake_classification/train
+    params:
+      - pipelines/fake_classification/params.yaml:
+          - training
+    outs:
+      - models/fake_classification
+      - reports/fake_classification/emissions.csv
+
+  eval:
+    wdir: ../..
+    cmd: python mlops_xoxo/fake_classification/eval.py
+    deps:
+      - mlops_xoxo/fake_classification/eval.py
+      - models/fake_classification
+      - data/processed/fake_classification/val
+      - pipelines/fake_classification/params.yaml
+    outs:
+      - reports/fake_classification/eval_predictions.json
+      - reports/fake_classification/eval_summary.txt
