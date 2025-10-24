@@ -28,6 +28,9 @@ dependencies = [
     "onnx>=1.14.0",
     "onnx2pytorch>=0.2.0",
     "onnxruntime>=1.15.0",
+    "pylint>=3.3.8",
+    "flake8>=7.3.0",
+    "pytest-mock>=3.15.1",
 ]
 
 [dependency-groups]
@@ -35,4 +38,16 @@ dev = [
     "black>=25.1.0",
     "pylint>=3.3.8",
     "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = "."
+testpaths = "tests"
+addopts = "--junitxml=reports/tests-report.xml --cov=mlops_xoxo --cov-report=html:reports/coverage"
+
+[tool.coverage.run]
+omit = [
+    "mlops_xoxo/test.py",
+    "mlops_xoxo/test_nested_mlflow.py",
 ]

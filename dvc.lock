@@ -17,7 +17,7 @@ stages:
       size: 2726043620
     - path: mlops_xoxo/data_ingest.py
       hash: md5
-      md5: 4e38caa49f7da7685373d6fcb7b61fbb
+      md5: 0178565d2db38e8391a153710e3a0095
       size: 435
     outs:
     - path: data/raw
@@ -35,13 +35,13 @@ stages:
       nfiles: 10000
     - path: mlops_xoxo/data_validate.py
       hash: md5
-      md5: 6732642e41a6f0a2251ea535eb078f4a
-      size: 2378
+      md5: 1c5789c1633d13db7ad3df126e977ce4
+      size: 2739
     outs:
     - path: docs
       hash: md5
-      md5: e35169b16cffac93df180700298927d1.dir
-      size: 194
+      md5: 96ee1fbc4eac3fe8b2a34f605fc229bd.dir
+      size: 229
       nfiles: 1
   split:
     cmd: python mlops_xoxo/data_split.py
@@ -53,70 +53,100 @@ stages:
       nfiles: 10000
     - path: mlops_xoxo/data_split.py
       hash: md5
-      md5: 326d81faeaf6d88d2955cb927555c3d2
-      size: 1239
+      md5: 606d8bb55310a97f0954609413aea4fe
+      size: 2166
     outs:
     - path: data/processed
       hash: md5
-      md5: 97549a74133df498032cbd76738b7ffc.dir
-      size: 54527737
+      md5: eb3bcf78934442af201df7514f9b90fd.dir
+      size: 54642736
       nfiles: 10001
   train:
     cmd: python mlops_xoxo/train.py > mlflow_run_id.txt
     deps:
     - path: data/processed/train
       hash: md5
-      md5: 2a683e6ec579f5dc4aabf94c01c6b2c8.dir
-      size: 37817245
+      md5: 4ac4c8d19815cb820e949cc36854fe55.dir
+      size: 37781098
       nfiles: 6974
     - path: mlops_xoxo/train.py
       hash: md5
-      md5: c5d47ee5ff5ed469cf41d903db609995
-      size: 6324
+      md5: cbb9af958d6618721e592322726b9e32
+      size: 13609
     - path: params.yaml
       hash: md5
-      md5: 0ebcf7c7b2e3f7204b2ebef4b763ab17
-      size: 531
+      md5: cea29f12363b7a1314959cd37aecf572
+      size: 619
     params:
       params.yaml:
         training:
           batch_size: 64
-          epochs: 20
-          lr: 0.0001
+          device: mps
           embedding_size: 512
+          epochs: 200
+          lr: 0.0001
           margin: 0.2
           weight_decay: 0.0001
-          device: mps
     outs:
     - path: models/face_embedding
       hash: md5
-      md5: 31d081f026fa017876bfa9e90f4d67af.dir
-      size: 112011117
+      md5: 4359b01037a078e198f732d182a593b4.dir
+      size: 11776372
       nfiles: 1
+    - path: reports/emissions.csv
+      hash: md5
+      md5: c36eba4469f664db8c785971058c47b1
+      size: 762
   eval:
     cmd: python mlops_xoxo/eval.py
     deps:
     - path: data/processed/val
       hash: md5
-      md5: d4c6110278efe2b1550fbb96126ea559.dir
-      size: 10644412
+      md5: ac4974dcc1ca0214c2f1850995d16564.dir
+      size: 10708305
       nfiles: 1975
     - path: mlops_xoxo/eval.py
       hash: md5
-      md5: 661bb8a861910b3142ecba758ea19304
-      size: 3339
+      md5: bc23b922d8346287db9a2facb6f5acda
+      size: 5737
     - path: models/face_embedding
       hash: md5
-      md5: bd30f87ab02dd7777c77c10608460197.dir
-      size: 112011117
+      md5: 4359b01037a078e198f732d182a593b4.dir
+      size: 11776372
       nfiles: 1
     - path: params.yaml
       hash: md5
-      md5: 0ebcf7c7b2e3f7204b2ebef4b763ab17
-      size: 531
+      md5: cea29f12363b7a1314959cd37aecf572
+      size: 619
     outs:
-    - path: reports
+    - path: reports/eval_predictions.json
       hash: md5
-      md5: 58bc49dca9d2edd3b8eb1c9a66411815.dir
-      size: 117645
-      nfiles: 2
+      md5: 170cbac3c8b344ac55f18f8e62d40410
+      size: 243717
+    - path: reports/eval_summary.txt
+      hash: md5
+      md5: 9ab853074c0568c97c41f4e746fd4371
+      size: 85
+  register_model:
+    cmd: "export MLFLOW_RUN_ID=$(cat mlflow_run_id.txt | grep 'MLFLOW_RUN_ID:' | cut
+      -d ':' -f 2) \npython mlops_xoxo/register_model.py \n"
+    deps:
+    - path: mlops_xoxo/register_model.py
+      hash: md5
+      md5: c69544e33847fcd7e0da839fa8018fff
+      size: 1666
+    - path: models/face_embedding
+      hash: md5
+      md5: 259e0943e4e53c7197d650ac66804295.dir
+      size: 11776372
+      nfiles: 1
+    params:
+      params.yaml:
+        training:
+          batch_size: 64
+          device: mps
+          embedding_size: 512
+          epochs: 10
+          lr: 0.0001
+          margin: 0.2
+          weight_decay: 0.0001
