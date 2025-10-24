@@ -1,7 +1,7 @@
 import os
+import json
 from pathlib import Path
 import cv2
-import json
 
 RAW_DIR = "data/raw"           # per-person folders
 MANIFEST_PATH = "data/processed/splits/manifest.json"
@@ -10,7 +10,9 @@ DOC_DIR = "docs"           # folder to save reports
 os.makedirs(DOC_DIR, exist_ok=True)
 report_path = os.path.join(DOC_DIR, "data_validation_report.txt")
 
+
 def check_person_folders(raw_dir):
+    """Function that checks people image information (and warning if needed)"""
     raw_dir = Path(raw_dir)
     person_folders = [p for p in raw_dir.iterdir() if p.is_dir()]
 
@@ -30,23 +32,27 @@ def check_person_folders(raw_dir):
     ]
     return summary + warnings
 
+
 def validate_images(raw_dir):
+    """Set if image is valid"""
     raw_dir = Path(raw_dir)
     corrupted = []
     for p in raw_dir.iterdir():
         if not p.is_dir():
             continue
         for img_path in p.glob("*.jpg"):
-            img = cv2.imread(str(img_path))
-            if img is None:
+            img = cv2.imread(str(img_path))  # pylint: disable=no-member
+            if img is None or img.size == 0:
                 corrupted.append(str(img_path))
     return corrupted
 
+
 def check_manifest(manifest_path):
+    """Function that checks if there is a manifest and returns it"""
     if not os.path.exists(manifest_path):
         return ["Manifest not found"]
 
-    with open(manifest_path, "r") as f:
+    with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = json.load(f)
 
     lines = []
@@ -55,7 +61,9 @@ def check_manifest(manifest_path):
         lines.append(f"{split}: {len(images)} images")
     return lines
 
-if __name__ == "__main__":
+
+def data_validate_main():
+    """Orchestrates data validation."""
     report_lines = []
     report_lines.append("=== Person folder check ===")
     report_lines += check_person_folders(RAW_DIR)
@@ -70,7 +78,11 @@ if __name__ == "__main__":
     report_lines += check_manifest(MANIFEST_PATH)
 
     # Save report
-    with open(report_path, "w") as f:
+    with open(report_path, "w", encoding="utf-8") as f:
         f.write("\n".join(report_lines))
 
     print(f"Data validation report saved to {report_path}")
+
+
+if __name__ == "__main__":
+    data_validate_main()
