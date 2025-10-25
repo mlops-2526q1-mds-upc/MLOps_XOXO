@@ -2,26 +2,23 @@
 """
 Train a lightweight face real/fake classifier.
 
-Inputs
-  --splits-dir : folder with train/ and val/ produced by data_split.py
-  --norm-json  : normalization.json from preprocessing (optional; falls back to ImageNet stats)
-
-Outputs (into --out-dir = artifacts/ai_face by default)
-  model_best.pth         # best by F1
-  model_last.pth         # last epoch
-  model.onnx             # optional: when --export-onnx 1
-  model_scripted.pt      # TorchScript (portable .pt)
-  metrics_history.csv    # per-epoch metrics
-  metrics_val.json       # best-epoch snapshot
-  label_map.json         # index -> class
-  config.json            # hyperparameters and paths
+Outputs:
+  models/fake_classification/
+      model_best.pth
+      model_last.pth
+      model_scripted.pt
+      metrics_history.csv
+      metrics_val.json
+      config.json
+  reports/fake_classification/
+      emissions.csv
 """
 
 from __future__ import annotations
-import argparse, json, logging, time
+import argparse, json, logging, time, os
 from pathlib import Path
 from typing import Tuple, Dict
-
+import mlflow
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -29,9 +26,59 @@ from torch.utils.data import DataLoader
 import torchvision
 from torchvision import datasets, transforms
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from tqdm import tqdm
+import yaml
+import pandas as pd
+from dotenv import load_dotenv
+
+# --- Shared utilities ---
+from train_util import (
+    init_mlflow, start_emissions_tracker, get_device,
+    log_metrics_mlflow, log_params_mlflow, prepare_output_dirs
+)
+
+# -------------------- Load params --------------------
+splits_dir = Path("data/processed/fake_classification/split")
+norm_dir = Path("data/fake_classification/preprocessing/val/normalization.json")
+out_dir = Path("models/fake_classification")
+
+with open("pipelines/fake_classification/params.yaml", encoding="utf-8") as f:
+    params = yaml.safe_load(f)
+
+# Hyperparameters
+backbone = params["training"]["backbone"]
+batch_size = params["training"]["batch_size"]
+epochs = params["training"]["epochs"]
+freeze_backbone = params["training"]["freeze_backbone"]
+lr = params["training"]["lr"]
+weight_decay = params["training"]["weight_decay"]
+num_workers = params["training"]["num_workers"]
+export_onnx = params["training"]["export_onnx"]
+
+# -------------------- Environment --------------------
+load_dotenv()
+mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
+if mlflow_uri:
+    mlflow.set_tracking_uri(mlflow_uri)
+mlflow_username = os.getenv("MLFLOW_TRACKING_USERNAME")
+mlflow_password = os.getenv("MLFLOW_TRACKING_PASSWORD")
+if mlflow_username and mlflow_password:
+    os.environ["MLFLOW_TRACKING_USERNAME"] = mlflow_username
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = mlflow_password
+
+run_name = params['mlflow'].get('run_name', 'default_run')
+
+device_param = params['training']['device'].lower()
+if device_param == 'cuda' and torch.cuda.is_available():
+    DEVICE = torch.device('cuda')
+elif device_param == 'mps' and getattr(torch.backends, 'mps', None) is not None:
+    DEVICE = torch.device('mps')
+else:
+    DEVICE = torch.device('cpu')
+print("Using device:", DEVICE)
 
 
-# -------------------- Utils --------------------
+# -------------------- Helper utils --------------------
 def setup_logger(v: int = 1):
     level = logging.WARNING if v == 0 else (logging.INFO if v == 1 else logging.DEBUG)
     logging.basicConfig(level=level,
@@ -41,7 +88,6 @@ def setup_logger(v: int = 1):
 
 def load_norm(norm_json: Path | None) -> Tuple[list[float], list[float]]:
     if not norm_json or not Path(norm_json).exists():
-        # ImageNet defaults
         return [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
     obj = json.loads(Path(norm_json).read_text())
     mean = obj.get("mean", [0.485, 0.456, 0.406])
@@ -99,35 +145,30 @@ def evaluate(model: nn.Module, loader: DataLoader, device: torch.device) -> Dict
     model.eval()
     y_true, y_pred = [], []
     with torch.no_grad():
-        for x, y in loader:
+        for x, y in tqdm(loader, desc="Evaluating", leave=False):
             x = x.to(device)
             logits = model(x)
             pred = torch.argmax(logits, dim=1).cpu().numpy().tolist()
             y_pred.extend(pred)
             y_true.extend(y.numpy().tolist())
     acc = accuracy_score(y_true, y_pred)
-    prec, rec, f1, _ = precision_recall_fscore_support(
-        y_true, y_pred, average="weighted", zero_division=0
-    )
-    return {"accuracy": float(acc), "precision": float(prec),
-            "recall": float(rec), "f1": float(f1)}
+    prec, rec, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="weighted", zero_division=0)
+    return {"accuracy": float(acc), "precision": float(prec), "recall": float(rec), "f1": float(f1)}
 
-
-# -------------------- Main --------------------
-def main():
+# -------------------- Training --------------------
+def main(run_id=None):
     ap = argparse.ArgumentParser(description="Train AI face classifier (real vs fake)")
-    ap.add_argument("--splits-dir", type=Path, required=True)
-    ap.add_argument("--norm-json", type=Path, default=None)
-    ap.add_argument("--backbone", choices=["mobilenet_v3_small", "resnet18", "efficientnet_b0"],
-                    default="mobilenet_v3_small")
-    ap.add_argument("--epochs", type=int, default=5)
-    ap.add_argument("--batch-size", type=int, default=64)
-    ap.add_argument("--lr", type=float, default=1e-3)
-    ap.add_argument("--weight-decay", type=float, default=1e-4)
-    ap.add_argument("--num-workers", type=int, default=2)
-    ap.add_argument("--freeze-backbone", type=int, default=0)
-    ap.add_argument("--export-onnx", type=int, default=0)
-    ap.add_argument("--out-dir", type=Path, default=Path("artifacts/ai_face"))
+    ap.add_argument("--splits-dir", type=Path, default=splits_dir)
+    ap.add_argument("--norm-json", type=Path, default=norm_dir)
+    ap.add_argument("--backbone", choices=["mobilenet_v3_small", "resnet18", "efficientnet_b0"], default=backbone)
+    ap.add_argument("--epochs", type=int, default=epochs)
+    ap.add_argument("--batch-size", type=int, default=batch_size)
+    ap.add_argument("--lr", type=float, default=lr)
+    ap.add_argument("--weight-decay", type=float, default=weight_decay)
+    ap.add_argument("--num-workers", type=int, default=num_workers)
+    ap.add_argument("--freeze-backbone", type=int, default=freeze_backbone)
+    ap.add_argument("--export-onnx", type=int, default=export_onnx)
+    ap.add_argument("--out-dir", type=Path, default=out_dir)
     ap.add_argument("-v", "--verbose", action="count", default=1)
     args = ap.parse_args()
 
@@ -135,69 +176,20 @@ def main():
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
     mean, std = load_norm(args.norm_json)
-    train_loader, val_loader = make_dataloaders(
-        args.splits_dir, mean, std, args.batch_size, args.num_workers
-    )
+    train_loader, val_loader = make_dataloaders(args.splits_dir, mean, std, args.batch_size, args.num_workers)
     classes = train_loader.dataset.classes
     label_map = {i: c for i, c in enumerate(classes)}
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = build_model(args.backbone, num_classes=len(classes),
-                        pretrained=True, freeze_backbone=bool(args.freeze_backbone)).to(device)
+                        pretrained=True, freeze_backbone=bool(args.freeze_backbone)).to(DEVICE)
 
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = optim.Adam(params, lr=args.lr, weight_decay=args.weight_decay)
     criterion = nn.CrossEntropyLoss()
 
-    # prepare metrics CSV
-    metrics_csv = args.out_dir / "metrics_history.csv"
-    if not metrics_csv.exists():
-        metrics_csv.write_text("epoch,train_loss,accuracy,precision,recall,f1\n")
-
-    best_f1 = -1.0
-
-    for epoch in range(1, args.epochs + 1):
-        model.train()
-        running = 0.0
-
-        for x, y in train_loader:
-            x, y = x.to(device), y.to(device)
-            optimizer.zero_grad()
-            logits = model(x)
-            loss = criterion(logits, y)
-            loss.backward()
-            optimizer.step()
-            running += loss.item() * x.size(0)
-
-        train_loss = running / len(train_loader.dataset)
-        metrics_val = evaluate(model, val_loader, device)
-
-        # log console + CSV
-        logging.info("Epoch %d | loss=%.4f | acc=%.4f | f1=%.4f",
-                     epoch, train_loss, metrics_val["accuracy"], metrics_val["f1"])
-        with metrics_csv.open("a", encoding="utf-8") as f:
-            f.write(f"{epoch},{train_loss:.6f},{metrics_val['accuracy']:.6f},"
-                    f"{metrics_val['precision']:.6f},{metrics_val['recall']:.6f},{metrics_val['f1']:.6f}\n")
-
-        # save best by F1
-        if metrics_val["f1"] > best_f1:
-            best_f1 = metrics_val["f1"]
-            torch.save({"state_dict": model.state_dict(),
-                        "backbone": args.backbone,
-                        "classes": classes},
-                       args.out_dir / "model_best.pth")
-            (args.out_dir / "label_map.json").write_text(json.dumps(label_map, indent=2))
-            (args.out_dir / "metrics_val.json").write_text(json.dumps(metrics_val, indent=2))
-
-    # final checkpoint + config
-    torch.save({"state_dict": model.state_dict(),
-                "backbone": args.backbone,
-                "classes": classes},
-               args.out_dir / "model_last.pth")
-
-    (args.out_dir / "config.json").write_text(json.dumps({
-        "splits_dir": str(args.splits_dir),
-        "norm_json": str(args.norm_json) if args.norm_json else None,
+    # --- Setup MLflow + outputs ---
+    model_dir, reports_dir = prepare_output_dirs("fake_classification")
+    log_params_mlflow({
         "backbone": args.backbone,
         "epochs": args.epochs,
         "batch_size": args.batch_size,
@@ -205,30 +197,128 @@ def main():
         "weight_decay": args.weight_decay,
         "num_workers": args.num_workers,
         "freeze_backbone": bool(args.freeze_backbone),
-        "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "device": str(DEVICE),
+        "num_classes": len(classes)
+    })
+
+    metrics_csv = args.out_dir / "metrics_history.csv"
+    if not metrics_csv.exists():
+        metrics_csv.write_text("epoch,train_loss,accuracy,precision,recall,f1\n")
+
+    with start_emissions_tracker("fake_classification", reports_dir):
+        best_f1, best_val_acc, best_val_loss, best_epoch = -1.0, 0.0, float("inf"), 0
+        for epoch in range(1, args.epochs + 1):
+            with torch.set_grad_enabled(True):
+                model.train()
+                total_loss = 0.0
+                for x, y in tqdm(train_loader, desc=f"Epoch {epoch}", leave=False):
+                    x, y = x.to(DEVICE), y.to(DEVICE)
+                    optimizer.zero_grad()
+                    logits = model(x)
+                    loss = criterion(logits, y)
+                    loss.backward()
+                    optimizer.step()
+                    total_loss += loss.item() * x.size(0)
+
+                avg_train_loss = total_loss / len(train_loader.dataset)
+                metrics_val = evaluate(model, val_loader, DEVICE)
+                log_metrics_mlflow({
+                    "train_loss": avg_train_loss,
+                    "val_accuracy": metrics_val["accuracy"],
+                    "val_precision": metrics_val["precision"],
+                    "val_recall": metrics_val["recall"],
+                    "val_f1": metrics_val["f1"]
+                }, step=epoch)
+
+                with metrics_csv.open("a", encoding="utf-8") as f:
+                    f.write(f"{epoch},{avg_train_loss:.6f},{metrics_val['accuracy']:.6f},"
+                            f"{metrics_val['precision']:.6f},{metrics_val['recall']:.6f},{metrics_val['f1']:.6f}\n")
+
+                if metrics_val["f1"] > best_f1:
+                    best_f1 = metrics_val["f1"]
+                    best_val_acc = metrics_val["accuracy"]
+                    best_val_loss = avg_train_loss
+                    best_epoch = epoch
+                    torch.save({"state_dict": model.state_dict(),
+                                "backbone": args.backbone,
+                                "classes": classes}, args.out_dir / "model_best.pth")
+                    (args.out_dir / "label_map.json").write_text(json.dumps(label_map, indent=2))
+                    (args.out_dir / "metrics_val.json").write_text(json.dumps(metrics_val, indent=2))
+
+    # Save last model and config
+    torch.save({"state_dict": model.state_dict(),
+                "backbone": args.backbone, "classes": classes},
+               args.out_dir / "model_last.pth")
+    (args.out_dir / "config.json").write_text(json.dumps({
+        "splits_dir": str(args.splits_dir),
+        "norm_json": str(args.norm_json),
+        "backbone": args.backbone,
+        "epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "lr": args.lr,
+        "weight_decay": args.weight_decay,
+        "num_workers": args.num_workers,
+        "freeze_backbone": bool(args.freeze_backbone),
+        "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     }, indent=2))
 
-    # Optional exports for portability
-    if args.export_onnx:
-        model.eval()
-        dummy = torch.randn(1, 3, 224, 224, device=device)
-        torch.onnx.export(model, dummy, args.out_dir / "model.onnx",
-                          input_names=["input"], output_names=["logits"],
-                          dynamic_axes={"input": {0: "batch"}, "logits": {0: "batch"}},
-                          opset_version=12)
-        logging.info("Exported ONNX to %s", (args.out_dir / "model.onnx").resolve())
+    # --- Log artifacts + metrics ---
+    for artifact in ["metrics_history.csv", "metrics_val.json", "config.json", "label_map.json"]:
+        mlflow.log_artifact(args.out_dir / artifact)
 
+    if args.export_onnx and (args.out_dir / "model.onnx").exists():
+        mlflow.log_artifact(args.out_dir / "model.onnx")
+    if (args.out_dir / "model_scripted.pt").exists():
+        mlflow.log_artifact(args.out_dir / "model_scripted.pt")
+
+    # --- Log emissions ---
     try:
-        model_cpu = model.to("cpu").eval()
-        scripted = torch.jit.script(model_cpu)
-        scripted.save(str(args.out_dir / "model_scripted.pt"))
-        logging.info("Saved TorchScript to %s", (args.out_dir / "model_scripted.pt").resolve())
+        df = pd.read_csv(reports_dir / "emissions.csv").tail(1)
+        mlflow.log_metric("carbon_emissions_kg", df["emissions"].iloc[0])
+        mlflow.log_metric("energy_kwh", df["energy_consumed"].iloc[0])
+        mlflow.set_tags({
+            "gpu_model": df.get("gpu_model", ["unknown"]).iloc[0],
+            "cpu_model": df.get("cpu_model", ["unknown"]).iloc[0],
+            "compute_region": f"{df['country_name'].iloc[0]} ({df['region'].iloc[0]})"
+        })
     except Exception as e:
-        logging.warning("TorchScript export failed: %s", e)
+        print(f"⚠️ Could not log emissions: {e}")
 
-    logging.info("Training complete. Best F1=%.4f", best_f1)
-    print(str(args.out_dir.resolve()))
+    mlflow.log_metrics({
+        "best_f1": best_f1,
+        "best_val_accuracy": best_val_acc,
+        "best_val_loss": best_val_loss
+    })
+    mlflow.set_tags({
+        "project": "fake_classification",
+        "framework": "pytorch",
+        "architecture": args.backbone,
+        "experiment_type": "fine_tune" if args.freeze_backbone else "baseline"
+    })
 
+    print(f"✅ Training complete — best F1: {best_f1:.4f}, model saved at {args.out_dir.resolve()}")
 
 if __name__ == "__main__":
-    main()
+        # Get experiment id or create one
+    experiment_id = params['mlflow'].get('experiment_id')
+    if not experiment_id:
+        experiment_name = params['mlflow'].get('experiment_name', 'face_embedding')
+        mlflow.set_experiment(experiment_name)
+        experiment = mlflow.get_experiment_by_name(experiment_name)
+        experiment_id = experiment.experiment_id
+        params['mlflow']['experiment_id'] = experiment_id
+        with open("pipelines/fake_classification/params.yaml", "w", encoding="utf-8") as f:
+            yaml.safe_dump(params, f)
+    else:
+        mlflow.set_experiment(params['mlflow'].get('experiment_name', 'face_embedding'))
+
+
+    # Start top-level run with experiment_id
+    with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as parent:
+        params['mlflow']['run_id'] = parent.info.run_id
+        with open("pipelines/fake_classification/params.yaml", "w", encoding="utf-8") as f:
+            yaml.safe_dump(params, f)
+
+        # Nested run for training
+        with mlflow.start_run(nested=True, run_name="train_model"):
+            main(run_id=mlflow.active_run().info.run_id)

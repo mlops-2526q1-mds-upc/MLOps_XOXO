@@ -4,51 +4,52 @@ stages:
     cmd: python mlops_xoxo/fake_classification/data_ingest.py
     deps:
       - mlops_xoxo/fake_classification/data_ingest.py
-      - data/external/fake_classification/casioface/train.rec
-      - data/external/fake_classification/casioface/train.idx
-      - data/external/fake_classification/casioface/train.lst
     outs:
+      - data/external/fake_classification/hf_cache
       - data/raw/fake_classification
-
-  validate:
+  preprocess:
     wdir: ../..
     cmd: python mlops_xoxo/fake_classification/data_preprocess.py
     deps:
       - mlops_xoxo/fake_classification/data_preprocess.py
       - data/raw/fake_classification
+    params:
+      - pipelines/fake_classification/params.yaml:
+          - preprocessing
     outs:
-      - docs/fake_classification
-
+      - data/processed/fake_classification/val
   split:
     wdir: ../..
     cmd: python mlops_xoxo/fake_classification/data_split.py
     deps:
       - mlops_xoxo/fake_classification/data_split.py
-      - data/raw/fake_classification
+      - data/processed/fake_classification/val
+    params:
+      - pipelines/fake_classification/params.yaml:
+          - dataset
     outs:
-      - data/processed/fake_classification
-
+      - data/processed/fake_classification/split
   train:
     wdir: ../..
-    cmd: python mlops_xoxo/fake_classification/train.py > mlflow_run_id.txt
+    cmd: python mlops_xoxo/fake_classification/train.py
     deps:
       - mlops_xoxo/fake_classification/train.py
-      - data/processed/fake_classification/train
+      - data/processed/fake_classification/split
+      - data/processed/fake_classification/val/normalization.json
     params:
       - pipelines/fake_classification/params.yaml:
           - training
     outs:
-      - models/fake_classification
-      - reports/fake_classification/emissions.csv
-
+      - models/fake_classification/
   eval:
     wdir: ../..
     cmd: python mlops_xoxo/fake_classification/eval.py
     deps:
       - mlops_xoxo/fake_classification/eval.py
-      - models/fake_classification
-      - data/processed/fake_classification/val
-      - pipelines/fake_classification/params.yaml
+      - models/fake_classification/
+      - data/processed/fake_classification/split
+    params:
+      - pipelines/fake_classification/params.yaml:
+          - mlflow
     outs:
-      - reports/fake_classification/eval_predictions.json
-      - reports/fake_classification/eval_summary.txt
+      - eval/fake_classification/

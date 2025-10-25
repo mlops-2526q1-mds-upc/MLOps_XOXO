@@ -40,9 +40,9 @@ from pathlib import Path
 DATA_URL = (
     "https://huggingface.co/datasets/pujanpaudel/deepfake_face_classification/resolve/main/val.zip"
 )
-CACHE_DIR = Path("data/external/hf_cache")
+CACHE_DIR = Path("data/external/fake_classification/hf_cache")
 ARCHIVE_NAME = "val.zip"
-OUTPUT_DIR = Path("data/raw/deepfake_val")  # follow data/raw convention
+OUTPUT_DIR = Path("data/raw/fake_classification")  # follow data/raw convention
 MANIFEST_NAME = "ingest_manifest.json"
 
 

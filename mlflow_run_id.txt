@@ -1,20 +1,14 @@
 Using device: mps
-['0000045', '0000099', '0000100', '0000102', '0000103', '0000105', '0000107', '0000108', '0000114', '0000117', '0000119', '0000121', '0000133', '0000137', '0000141', '0000143', '0000144', '0000145', '0000147', '0000156', '0000157', '0000159', '0000166', '0000168', '0000169', '0000170', '0000174', '0000177', '0000183', '0000185', '0000186', '0000188', '0000189', '0000192', '0000195', '0000198', '0000202', '0000204', '0000205', '0000207', '0000208', '0000210', '0000211', '0000212', '0000214', '0000220', '0000225', '0000233', '0000238', '0000240', '0000247', '0000249', '0000254', '0000256', '0000260', '0000262', '0000263']
+Loaded 57 classes from dataset.
 
-Starting CodeCarbon Emissions Tracker.
-Epoch 0 avg loss 15.7964
-Validation loss 13.7173, acc 0.0623
-🏃 View run epoch_0 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/11cd60a080e541b3ae445f4a6383591e
+Starting CodeCarbon Emissions Tracker...
+Epoch 0: train_loss=15.6582 | val_loss=13.4504 | val_acc=0.0785
+Epoch 1: train_loss=11.2692 | val_loss=12.1832 | val_acc=0.1514
+Epoch 2: train_loss=8.4929 | val_loss=11.7621 | val_acc=0.2223
+Epoch 3: train_loss=6.3436 | val_loss=11.6881 | val_acc=0.2405
+⚠️ Emission log failed: [Errno 2] No such file or directory: 'reports/face_embedding/emissions.csv'
+✅ Training complete. Best val acc = 0.2405
+🏃 View run train_model at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/7c0ba64a8fa84b118a7c930f81f5f654
 🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
-Epoch 1 avg loss 11.3375
-Validation loss 12.3447, acc 0.1554
-🏃 View run epoch_1 at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/df7c5b3db7cf4241b8637fd8bf20bf02
-🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
-Computing top-1 and top-5 NN accuracy on validation set...
-Validation Top-1 NN accuracy: 0.4061
-Validation Top-5 NN accuracy: 0.6365
-Training finished — model saved to models/face_embedding and registered as mobilenetv2_arcface_model
-🏃 View run train_model at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/10481f09592740139fb1dd22d489253b
-🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
-🏃 View run face_embedding_2_epochs at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/a338eb77a8104e879a548db58d69f81f
+🏃 View run face_embedding_4_epochs at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/a84ab89c125d45488099a996c315c03b
 🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4

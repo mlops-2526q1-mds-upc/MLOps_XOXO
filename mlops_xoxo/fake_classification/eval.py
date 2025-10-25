@@ -15,6 +15,25 @@ from torchvision import datasets, transforms
 import torchvision
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
 import pandas as pd
+import yaml
+from dotenv import load_dotenv
+import mlflow
+import os
+
+with open("pipelines/fake_classification/params.yaml", encoding="utf-8") as f:
+    params = yaml.safe_load(f)
+
+load_dotenv()
+mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
+if mlflow_uri:
+    mlflow.set_tracking_uri(mlflow_uri)
+mlflow_username = os.getenv("MLFLOW_TRACKING_USERNAME")
+mlflow_password = os.getenv("MLFLOW_TRACKING_PASSWORD")
+if mlflow_username and mlflow_password:
+    os.environ["MLFLOW_TRACKING_USERNAME"] = mlflow_username
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = mlflow_password
+
+run_name = params['mlflow'].get('run_name', 'default_run')
 
 def setup_logger():
     logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s - %(message)s')
@@ -41,6 +60,10 @@ def build_model(backbone: str, num_classes: int) -> nn.Module:
     else:
         raise ValueError(f"Unsupported backbone: {backbone}")
     return m
+
+def save_results(results):
+    print
+    
 
 def main():
     ap = argparse.ArgumentParser(description="Evaluate classifier on a split")
@@ -83,5 +106,53 @@ def main():
     logging.info("Eval %s | acc=%.4f f1=%.4f", args.split, acc, f1)
     print(str((args.out_dir/f"metrics_{args.split}.json").resolve()))
 
+    return metrics  # ✅ return to upper function
+
+def evaluate_model():
+    """Main orchestrator for model evaluation with MLflow logging."""
+    experiment_name = params['mlflow'].get('experiment_name', 'fake_classification')
+    mlflow.set_experiment(experiment_name)
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+    experiment_id = experiment.experiment_id
+
+    parent_run_id = params['mlflow'].get('run_id')
+    if not parent_run_id:
+        raise ValueError("⚠️ Missing parent run_id in params.yaml. Run training first before evaluation.")
+
+    # ✅ Start new nested run linked to training
+    with mlflow.start_run(experiment_id=experiment_id, run_name="evaluate_model",
+                          nested=True, tags={"mlflow.parentRunId": parent_run_id}):
+        # Run main evaluation (compute metrics + save JSON/CSV)
+        results = main()
+
+        # Log metrics
+        mlflow.log_metrics({
+            "eval_accuracy": results["accuracy"],
+            "eval_precision": results["precision"],
+            "eval_recall": results["recall"],
+            "eval_f1": results["f1"]
+        })
+
+        # Log artifacts
+        split = results["split"]
+        metrics_path = Path(f"artifacts/ai_face_eval/metrics_{split}.json")
+        cm_path = Path(f"artifacts/ai_face_eval/confusion_matrix_{split}.csv")
+
+        if metrics_path.exists():
+            mlflow.log_artifact(str(metrics_path))
+        if cm_path.exists():
+            mlflow.log_artifact(str(cm_path))
+
+        # Add metadata / tags
+        mlflow.set_tags({
+            "stage": "evaluation",
+            "linked_training_run": parent_run_id,
+            "split": split,
+            "task": "fake_classification",
+            "framework": "pytorch",
+        })
+
+        print(f"✅ Logged evaluation results to MLflow under run {mlflow.active_run().info.run_id}")
+
 if __name__ == "__main__":
-    main()
+    evaluate_model()
