@@ -103,3 +103,34 @@ stages:
       md5: bc50b37bb313f06b6cfd2507f2e0466d.dir
       size: 12422556
       nfiles: 6
+  eval:
+    cmd: python mlops_xoxo/fake_classification/eval.py
+    deps:
+    - path: data/processed/fake_classification/split
+      hash: md5
+      md5: 0d23ce1199aa86ee97f8e7cb7c50b676.dir
+      size: 171499407
+      nfiles: 2941
+    - path: mlops_xoxo/fake_classification/eval.py
+      hash: md5
+      md5: 6053abed6d711c6a61229f2961ab0b03
+      size: 6781
+    - path: models/fake_classification/
+      hash: md5
+      md5: bc50b37bb313f06b6cfd2507f2e0466d.dir
+      size: 12422556
+      nfiles: 6
+    params:
+      pipelines/fake_classification/params.yaml:
+        mlflow:
+          experiment_id: '5'
+          experiment_name: fake_classification
+          run_id: f401ce1f88d44fe5a5c47a2a1a61b344
+          run_name: fake_classification_3_epochs
+          tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
+    outs:
+    - path: reports/fake_classification/
+      hash: md5
+      md5: db1accd7e1da63d3c570462fa3e29f50.dir
+      size: 228
+      nfiles: 2

@@ -52,4 +52,4 @@ stages:
       - pipelines/fake_classification/params.yaml:
           - mlflow
     outs:
-      - eval/fake_classification/
+      - reports/fake_classification/

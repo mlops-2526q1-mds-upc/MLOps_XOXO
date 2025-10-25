@@ -19,7 +19,10 @@ import yaml
 from dotenv import load_dotenv
 import mlflow
 import os
-
+splits_dir = Path("data/processed/fake_classification/split")
+norm_dir = Path("data/fake_classification/preprocessing/val/normalization.json")
+out_dir = Path("reports/fake_classification")
+checkpoint_default = Path("models/fake_classification/model_best.pth")
 with open("pipelines/fake_classification/params.yaml", encoding="utf-8") as f:
     params = yaml.safe_load(f)
 
@@ -65,13 +68,13 @@ def save_results(results):
     print
     
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(description="Evaluate classifier on a split")
-    ap.add_argument("--splits-dir", type=Path, required=True)
+    ap.add_argument("--splits-dir", type=Path, default=splits_dir)
     ap.add_argument("--split", choices=["train","val","test"], default="test")
-    ap.add_argument("--norm-json", type=Path, default=None)
-    ap.add_argument("--checkpoint", type=Path, required=True)
-    ap.add_argument("--out-dir", type=Path, default=Path("artifacts/ai_face_eval"))
+    ap.add_argument("--norm-json", type=Path, default=norm_dir)
+    ap.add_argument("--checkpoint", type=Path, default=checkpoint_default)
+    ap.add_argument("--out-dir", type=Path, default=out_dir)
     args = ap.parse_args()
     setup_logger()
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -123,7 +126,7 @@ def evaluate_model():
     with mlflow.start_run(experiment_id=experiment_id, run_name="evaluate_model",
                           nested=True, tags={"mlflow.parentRunId": parent_run_id}):
         # Run main evaluation (compute metrics + save JSON/CSV)
-        results = main()
+        results = main([])
 
         # Log metrics
         mlflow.log_metrics({
@@ -135,9 +138,8 @@ def evaluate_model():
 
         # Log artifacts
         split = results["split"]
-        metrics_path = Path(f"artifacts/ai_face_eval/metrics_{split}.json")
-        cm_path = Path(f"artifacts/ai_face_eval/confusion_matrix_{split}.csv")
-
+        metrics_path = out_dir / f"metrics_{split}.json"
+        cm_path = out_dir / f"confusion_matrix_{split}.csv"
         if metrics_path.exists():
             mlflow.log_artifact(str(metrics_path))
         if cm_path.exists():
