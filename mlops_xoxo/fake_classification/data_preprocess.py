@@ -12,6 +12,16 @@ import argparse, json, logging, time, sys, dataclasses
 from pathlib import Path
 import cv2, numpy as np, pandas as pd
 from PIL import Image
+import yaml
+
+INPUT_DIR = Path("data/raw/fake_classification/val")
+OUTPUT_DIR = Path("data/processed/fake_classification/val")
+
+with open("pipelines/fake_classification/params.yaml", encoding="utf-8") as f:
+    params = yaml.safe_load(f)
+
+MARGIN = params["preprocessing"].get("margin", 0.25)
+IMAGE_SIZE = params["preprocessing"].get("image_size", 224)
 
 def setup_logger():
     logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s - %(message)s")
@@ -75,10 +85,10 @@ def preprocess(in_dir: Path, out_dir: Path, size=224, margin=0.25):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--in-dir", type=Path, required=True)
-    parser.add_argument("--out-dir", type=Path, required=True)
-    parser.add_argument("--size", type=int, default=224)
-    parser.add_argument("--margin", type=float, default=0.25)
+    parser.add_argument("--in-dir", type=Path, default=INPUT_DIR)
+    parser.add_argument("--out-dir", type=Path, default=OUTPUT_DIR)
+    parser.add_argument("--size", type=int, default=IMAGE_SIZE)
+    parser.add_argument("--margin", type=float, default=MARGIN)
     args = parser.parse_args()
     setup_logger()
     preprocess(args.in_dir, args.out_dir, args.size, args.margin)

@@ -31,9 +31,14 @@ dependencies = [
     "pylint>=3.3.8",
     "flake8>=7.3.0",
     "pytest-mock>=3.15.1",
+    "transformers",
+    "pillow",
+    "ultralytics",
+    "opencv-python",
     "fastapi>=0.117.1",
     "uvicorn[standard]>=0.36.0",
-    "python-multipart>=0.0.20",
+    "loguru>=0.7.3",
+    "python-multipart>=0.0.6",
 ]
 
 [dependency-groups]

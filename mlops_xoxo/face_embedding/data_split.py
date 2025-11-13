@@ -6,9 +6,9 @@ from pathlib import Path
 from utils.data_utils import create_manifest
 
 # Paths
-RAW_DIR = Path("data/raw")              # raw images by person
-MANIFEST_PATH = Path("data/processed/splits/manifest.json")  # manifest with splits
-OUTPUT_DIR = Path("data/processed")              # root output folder
+RAW_DIR = Path("data/raw/face_embedding")              # raw images by person
+MANIFEST_PATH = Path("data/processed/face_embedding/splits/manifest.json")  # manifest with splits
+OUTPUT_DIR = Path("data/processed/face_embedding")              # root output folder
 
 SPLITS = ["train", "val", "test"]
 

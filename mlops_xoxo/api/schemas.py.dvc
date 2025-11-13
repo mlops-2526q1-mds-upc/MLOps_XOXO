@@ -1,0 +1,5 @@
+outs:
+- md5: 0e926e80676a10ddc683a2a93c6f8a0e
+  size: 353
+  hash: md5
+  path: schemas.py
