@@ -1,13 +1,13 @@
 dataset:
-  external_dir: data/external
-  processed_dir: data/processed
-  raw_dir: data/raw
+  external_dir: data/external/age_gender
+  processed_dir: data/processed/age_gender
+  raw_dir: data/raw/age_gender/UTKFace
   split:
     test: 0.15
     train: 0.7
     val: 0.15
 mlflow:
-  experiment_id: '4'
+  experiment_id: "4"
   experiment_name: face_embedding
   run_id: a90bc793e451424fa50694dee3032877
   run_name: face_embedding_200_epochs
