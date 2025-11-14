@@ -1,49 +1,53 @@
 stages:
   ingest:
-    cmd: python mlops_xoxo/data_ingest.py
+    wdir: ../..
+    cmd: python mlops_xoxo/emotion_classification/data_ingest.py
     deps:
-      - mlops_xoxo/data_ingest.py
-      - data/external/casioface/train.rec
-      - data/external/casioface/train.idx
-      - data/external/casioface/train.lst
+      - mlops_xoxo/emotion_classification/data_ingest.py
+      - data/raw/emotion
     outs:
-      - data/raw
+      - data/raw/emotion
 
   validate:
-    cmd: python mlops_xoxo/data_validate.py
+    wdir: ../..
+    cmd: python mlops_xoxo/emotion_classification/data_validate.py
     deps:
-      - mlops_xoxo/data_validate.py
-      - data/raw
+      - mlops_xoxo/emotion_classification/data_validate.py
+      - data/raw/emotion
     outs:
-      - docs
+      - docs/emotion
 
   split:
-    cmd: python mlops_xoxo/data_split.py
+    wdir: ../..
+    cmd: python mlops_xoxo/emotion_classification/data_split.py
     deps:
-      - mlops_xoxo/data_split.py
-      - data/raw
+      - mlops_xoxo/emotion_classification/data_split.py
+      - data/raw/emotion
     outs:
-      - data/processed
+      - data/processed/emotion
 
   train:
-    cmd: python mlops_xoxo/train.py > mlflow_run_id.txt
+    wdir: ../..
+    cmd: python mlops_xoxo/emotion_classification/train.py > mlflow_run_id.txt
     deps:
-      - mlops_xoxo/train.py
-      - data/processed/train
-      - params.yaml
+      - mlops_xoxo/emotion_classification/train.py
+      - data/processed/emotion/train
+      - pipelines/emotion_classification/params.yaml
     params:
-      - training
+      - pipelines/emotion_classification/params.yaml:
+          - training
     outs:
-      - models/face_embedding
-      - reports/emissions.csv
+      - models/emotion_classification
+      - reports/emotion_classification/emissions.csv
 
   eval:
-    cmd: python mlops_xoxo/eval.py
+    wdir: ../..
+    cmd: python mlops_xoxo/emotion_classification/eval.py
     deps:
-      - mlops_xoxo/eval.py
-      - models/face_embedding
-      - data/processed/val
-      - params.yaml
+      - mlops_xoxo/emotion_classification/eval.py
+      - models/emotion_classification
+      - data/processed/emotion/val
+      - pipelines/emotion_classification/params.yaml
     outs:
-      - reports/eval_predictions.json
-      - reports/eval_summary.txt
+      - reports/emotion_classification/eval_metrics.json
+      - reports/emotion_classification/eval_summary.txt
