@@ -26,3 +26,19 @@ training:
   lr: 0.0001
   margin: 0.2
   weight_decay: 0.0001
+  image_size: 224
+  seed: 42
+
+# Model architecture
+model:
+  backbone: "mobilenet_v2"
+  dropout: 0.2
+
+# MLflow experiment configuration
+experiment:
+  name: "gender_age_classification"
+  tags:
+    project: "MLOps_XOXO"
+    task: "face_analysis"
+    team: "pawarit.jamjod"
+    framework: "pytorch"
