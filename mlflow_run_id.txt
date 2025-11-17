@@ -1,14 +1,32 @@
-Using device: mps
-Loaded 57 classes from dataset.
-
-Starting CodeCarbon Emissions Tracker...
-Epoch 0: train_loss=15.6582 | val_loss=13.4504 | val_acc=0.0785
-Epoch 1: train_loss=11.2692 | val_loss=12.1832 | val_acc=0.1514
-Epoch 2: train_loss=8.4929 | val_loss=11.7621 | val_acc=0.2223
-Epoch 3: train_loss=6.3436 | val_loss=11.6881 | val_acc=0.2405
-⚠️ Emission log failed: [Errno 2] No such file or directory: 'reports/face_embedding/emissions.csv'
-✅ Training complete. Best val acc = 0.2405
-🏃 View run train_model at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/7c0ba64a8fa84b118a7c930f81f5f654
-🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
-🏃 View run face_embedding_4_epochs at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4/runs/a84ab89c125d45488099a996c315c03b
-🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/4
+[INFO] Seed set to 42
+[INFO] Model directory: models/emotion_classification
+[INFO] Report directory: reports/emotion_classification
+[INFO] MLflow experiment: emotion_classification (ID: 7)
+  ⚠ GPU requested but not available, falling back to CPU
+[INFO] Using device: cpu
+[INFO] Image size: 48x48
+[INFO] Loading training data from data/processed/emotion_classification/train
+[INFO] Classes found: ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+[INFO] Number of classes: 7
+[INFO] Loading validation data from data/processed/emotion_classification/val
+[INFO] Train dataset size: 22604, Val dataset size: 4841
+[INFO] Batch size: 32
+[INFO] Building ResNet18 model with 1-channel input...
+[INFO] Starting MLflow run: emotion_classification_200_epochs
+[INFO] Logged training parameters to MLflow
+[INFO] Starting training for 1 epochs...
+Epoch 1/1 | Train Loss: 1.5099 | Train Acc: 0.4313 | Train Macro F1: 0.3341
+                 Val Acc: 0.4896 | Val Macro F1: 0.3781
+[INFO] ✓ New best model saved at epoch 1 (val_macro_f1=0.3781)
+[INFO] Training complete!
+[INFO] Loading best model from models/emotion_classification/best_model.pth
+[INFO] Saved test metrics to reports/emotion_classification/test_metrics_20251117_183410.json
+[INFO] Final validation accuracy: 0.4896
+[INFO] Final validation macro F1: 0.3781
+[INFO] Uploading model and artifacts to MLflow...
+[INFO] ✓ Model uploaded to MLflow
+[INFO] ✓ Test metrics uploaded to MLflow
+[INFO] ✅ Training complete and all artifacts logged to MLflow!
+[INFO] Best model achieved val_macro_f1=0.3781 at epoch 1
+🏃 View run emotion_classification_200_epochs at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/7/runs/5b33d4f286df4da4b2338101266ac0f5
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/7

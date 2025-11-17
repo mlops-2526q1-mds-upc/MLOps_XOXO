@@ -156,3 +156,5 @@ stages:
     cmd: dvc repro pipelines/fake_classification/dvc.yaml
   fake_classification_pipeline:
     cmd: dvc repro pipelines/fake_classification/dvc.yaml
+  emotion_classification_pipeline:
+    cmd: dvc repro pipelines/emotion_classification/dvc.yaml

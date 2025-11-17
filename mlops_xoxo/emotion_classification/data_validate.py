@@ -20,8 +20,8 @@ def gather_stats(root: Path):
 def main():
     with open("pipelines/emotion_classification/params.yaml", encoding="utf-8") as f:
         params = yaml.safe_load(f)
-    raw_dir = Path(params["dataset"]["raw_dir"]) / "emotion"
-    out_dir = Path("docs/emotion")
+    raw_dir = Path(params["dataset"]["raw_dir"]) / "emotion_classification"
+    out_dir = Path("docs/emotion_classification")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if not raw_dir.exists():

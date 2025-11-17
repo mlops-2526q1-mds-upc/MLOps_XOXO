@@ -32,7 +32,7 @@ def main():
     with open("pipelines/emotion_classification/params.yaml", encoding="utf-8") as f:
         params = yaml.safe_load(f)
 
-    data_root = Path(params['dataset']['processed_dir']) / 'emotion'
+    data_root = Path(params['dataset']['processed_dir']) / 'emotion_classification'
     val_dir = data_root / 'val'
     if not val_dir.exists():
         raise FileNotFoundError(f"Val dir not found: {val_dir}")
