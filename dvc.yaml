@@ -1,49 +1,65 @@
 stages:
   ingest:
-    cmd: python mlops_xoxo/data_ingest.py
+    cmd: .venv/bin/python age_gender/data_ingest.py
     deps:
-      - mlops_xoxo/data_ingest.py
-      - data/external/casioface/train.rec
-      - data/external/casioface/train.idx
-      - data/external/casioface/train.lst
+      - age_gender/data_ingest.py
+      - data/raw/utkface_aligned_cropped/UTKFace
     outs:
-      - data/raw
-
-  validate:
-    cmd: python mlops_xoxo/data_validate.py
-    deps:
-      - mlops_xoxo/data_validate.py
-      - data/raw
-    outs:
-      - docs
+      - data/processed/utkface_metadata.csv
 
   split:
-    cmd: python mlops_xoxo/data_split.py
+    cmd: .venv/bin/python age_gender/data_split.py
     deps:
-      - mlops_xoxo/data_split.py
-      - data/raw
+      - age_gender/data_split.py
+      - data/processed/utkface_metadata.csv
     outs:
-      - data/processed
+      - data/processed/splits
+
+  validate:
+    cmd: .venv/bin/python age_gender/data_validate.py
+    deps:
+      - age_gender/data_validate.py
+      - data/processed/utkface_metadata.csv
+      - data/raw/utkface_aligned_cropped/UTKFace
+    outs:
+      - data/processed/validation
 
   train:
-    cmd: python mlops_xoxo/train.py > mlflow_run_id.txt
+    cmd: .venv/bin/python age_gender/train.py
     deps:
-      - mlops_xoxo/train.py
-      - data/processed/train
+      - age_gender/train.py
+      - age_gender/config.py
+      - data/processed/splits/train.csv
+      - data/processed/splits/val.csv
       - params.yaml
     params:
       - training
+      - model
+      - experiment
     outs:
-      - models/face_embedding
-      - reports/emissions.csv
+      - models/gender_model.pt
+      - models/age_model.pt
 
   eval:
-    cmd: python mlops_xoxo/eval.py
+    cmd: .venv/bin/python age_gender/eval.py
     deps:
-      - mlops_xoxo/eval.py
-      - models/face_embedding
-      - data/processed/val
+      - age_gender/eval.py
+      - age_gender/config.py
+      - models/gender_model.pt
+      - models/age_model.pt
+      - data/processed/splits/val.csv
       - params.yaml
     outs:
-      - reports/eval_predictions.json
-      - reports/eval_summary.txt
+      - models/evaluation
+
+  test:
+    cmd: .venv/bin/python age_gender/test.py
+    deps:
+      - age_gender/test.py
+      - age_gender/config.py
+      - models/gender_model.pt
+      - models/age_model.pt
+      - data/processed/splits/test.csv
+      - params.yaml
+    outs:
+      - models/test_results
