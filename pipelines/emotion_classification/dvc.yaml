@@ -1,0 +1,53 @@
+stages:
+  ingest:
+    wdir: ../..
+    cmd: python mlops_xoxo/emotion_classification/data_ingest.py
+    deps:
+      - mlops_xoxo/emotion_classification/data_ingest.py
+      - data/raw/emotion
+    outs:
+      - data/raw/emotion
+
+  validate:
+    wdir: ../..
+    cmd: python mlops_xoxo/emotion_classification/data_validate.py
+    deps:
+      - mlops_xoxo/emotion_classification/data_validate.py
+      - data/raw/emotion
+    outs:
+      - docs/emotion
+
+  split:
+    wdir: ../..
+    cmd: python mlops_xoxo/emotion_classification/data_split.py
+    deps:
+      - mlops_xoxo/emotion_classification/data_split.py
+      - data/raw/emotion
+    outs:
+      - data/processed/emotion
+
+  train:
+    wdir: ../..
+    cmd: python mlops_xoxo/emotion_classification/train.py > mlflow_run_id.txt
+    deps:
+      - mlops_xoxo/emotion_classification/train.py
+      - data/processed/emotion/train
+      - pipelines/emotion_classification/params.yaml
+    params:
+      - pipelines/emotion_classification/params.yaml:
+          - training
+    outs:
+      - models/emotion_classification
+      - reports/emotion_classification/emissions.csv
+
+  eval:
+    wdir: ../..
+    cmd: python mlops_xoxo/emotion_classification/eval.py
+    deps:
+      - mlops_xoxo/emotion_classification/eval.py
+      - models/emotion_classification
+      - data/processed/emotion/val
+      - pipelines/emotion_classification/params.yaml
+    outs:
+      - reports/emotion_classification/eval_metrics.json
+      - reports/emotion_classification/eval_summary.txt

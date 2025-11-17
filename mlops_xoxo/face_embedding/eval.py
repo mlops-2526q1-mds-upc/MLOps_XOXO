@@ -12,7 +12,7 @@ from PIL import Image
 from torchvision import transforms
 from train import MobileFace
 
-with open("params.yaml", encoding="utf-8") as f:
+with open("pipelines/face_embedding/params.yaml", encoding="utf-8") as f:
     params = yaml.safe_load(f)
 
 load_dotenv()
@@ -32,7 +32,7 @@ DEVICE = torch.device('mps') if getattr(torch.backends, 'mps', None) else torch.
 print("Using device:", DEVICE)
 
 # Load model
-model_path = Path('models/face_embedding/mobilenetv2_arcface_epoch_last.pt')
+model_path = Path('models/face_embedding/mobilenetv2_arcface_model.pth')
 model = MobileFace().to(DEVICE)
 state_dict = torch.load(model_path, map_location=DEVICE)
 model.load_state_dict(state_dict, strict=False)  # ignore extra logits keys
@@ -50,7 +50,7 @@ with open(OUT / 'splits' / 'manifest.json', "r", encoding="utf-8") as f:
     manifest = json.load(f)
 TEST_DIR = OUT / "test"
 
-reports_dir = Path('reports')
+reports_dir = Path('reports/face_embedding')
 
 
 def calculate_metrics(model, manifest, transform, device):
@@ -111,7 +111,7 @@ def save_results(results):
     mlflow.log_param('model_path', str(model_path))
 
     # Save artifacts
-    reports_dir = Path('reports')
+    reports_dir = Path('reports/face_embedding')
     reports_dir.mkdir(parents=True, exist_ok=True)
     summary_file = reports_dir / 'eval_summary.txt'
     with open(summary_file, 'w') as f:
@@ -135,30 +135,27 @@ def save_results(results):
 
 def evaluate_model():
     """Main orchestrator function for model evaluation"""
-    # Get experiment id or create one
-    experiment_id = params['mlflow'].get('experiment_id')
-    if not experiment_id:
-        experiment_name = params['mlflow'].get('experiment_name', 'face_embedding')
-        mlflow.set_experiment(experiment_name)
-        experiment = mlflow.get_experiment_by_name(experiment_name)
-        experiment_id = experiment.experiment_id
-        params['mlflow']['experiment_id'] = experiment_id
-        with open("params.yaml", "w", encoding="utf-8") as f:
-            yaml.safe_dump(params, f)
-    else:
-        mlflow.set_experiment(params['mlflow'].get('experiment_name', 'face_embedding'))
+    experiment_name = params['mlflow'].get('experiment_name', 'face_embedding')
+    mlflow.set_experiment(experiment_name)
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+    experiment_id = experiment.experiment_id
 
-    # Start top-level run with experiment_id
-    parent_run_id = params['mlflow']['run_id']
-    with mlflow.start_run(experiment_id=experiment_id, run_id=parent_run_id) as _:
-        with open("params.yaml", "w", encoding="utf-8") as f:
-            yaml.safe_dump(params, f)
+    parent_run_id = params['mlflow'].get('run_id')
+    if not parent_run_id:
+        raise ValueError("⚠️ Missing parent run_id in params.yaml. Run training first before evaluation.")
 
-        # Nested run for training
-        with mlflow.start_run(nested=True, run_name="evaluate_model"):
-            results = calculate_metrics(model, manifest, transform, DEVICE)
-            save_results(results)
+    # ✅ Create a new nested run under the same parent (even if parent is finished)
+    with mlflow.start_run(experiment_id=experiment_id, run_name="evaluate_model",
+                          nested=True, tags={"mlflow.parentRunId": parent_run_id}):
+        results = calculate_metrics(model, manifest, transform, DEVICE)
+        save_results(results)
 
+        mlflow.set_tags({
+            "stage": "evaluation",
+            "linked_training_run": parent_run_id,
+            "task": "face_embedding",
+            "framework": "pytorch",
+        })
 
 if __name__ == "__main__":
     evaluate_model()

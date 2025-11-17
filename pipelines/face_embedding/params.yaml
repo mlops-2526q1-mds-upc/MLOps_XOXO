@@ -9,8 +9,8 @@ dataset:
 mlflow:
   experiment_id: '4'
   experiment_name: face_embedding
-  run_id: a90bc793e451424fa50694dee3032877
-  run_name: face_embedding_3_epochs
+  run_id: a84ab89c125d45488099a996c315c03b
+  run_name: face_embedding_4_epochs
   tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
 preprocessing:
   image_size: 160
@@ -22,23 +22,7 @@ training:
   batch_size: 64
   device: mps
   embedding_size: 512
-  epochs: 3
+  epochs: 4
   lr: 0.0001
   margin: 0.2
   weight_decay: 0.0001
-  image_size: 224
-  seed: 42
-
-# Model architecture
-model:
-  backbone: "mobilenet_v2"
-  dropout: 0.2
-
-# MLflow experiment configuration
-experiment:
-  name: "gender_age_classification"
-  tags:
-    project: "MLOps_XOXO"
-    task: "face_analysis"
-    team: "pawarit.jamjod"
-    framework: "pytorch"

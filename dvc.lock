@@ -128,28 +128,9 @@ stages:
           lr: 0.0001
           margin: 0.2
           weight_decay: 0.0001
-  test:
-    cmd: python age_gender/test.py
-    deps:
-    - path: age_gender/test.py
-      hash: md5
-      md5: 89d0214c4c8bcd0976ddd28b70283c38
-      size: 5078
-    - path: data/processed/splits/test.csv
-      hash: md5
-      md5: 854572e33da0a788c828ae5f762b6a8e
-      size: 159136
-    - path: models/age_model.pt
-      hash: md5
-      md5: 2f7bc51bdc35518cafaa7df9eacf87f4
-      size: 9146315
-    - path: models/gender_model.pt
-      hash: md5
-      md5: 0615289ebc3a1f5ab230c4bf69b390a6
-      size: 9152395
-    outs:
-    - path: models/test_results
-      hash: md5
-      md5: 96abc648d6c4bc6fab12c851b29a6c52.dir
-      size: 496
-      nfiles: 1
+  face_embedding_pipeline:
+    cmd: dvc repro pipelines/face_embedding/dvc.yaml
+  face_classification_pipeline:
+    cmd: dvc repro pipelines/fake_classification/dvc.yaml
+  fake_classification_pipeline:
+    cmd: dvc repro pipelines/fake_classification/dvc.yaml

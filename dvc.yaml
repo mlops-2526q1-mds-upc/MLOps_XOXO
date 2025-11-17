@@ -1,65 +1,6 @@
 stages:
-  ingest:
-    cmd: .venv/bin/python age_gender/data_ingest.py
-    deps:
-      - age_gender/data_ingest.py
-      - data/raw/utkface_aligned_cropped/UTKFace
-    outs:
-      - data/processed/utkface_metadata.csv
+  face_embedding_pipeline:
+    cmd: dvc repro pipelines/face_embedding/dvc.yaml
 
-  split:
-    cmd: .venv/bin/python age_gender/data_split.py
-    deps:
-      - age_gender/data_split.py
-      - data/processed/utkface_metadata.csv
-    outs:
-      - data/processed/splits
-
-  validate:
-    cmd: .venv/bin/python age_gender/data_validate.py
-    deps:
-      - age_gender/data_validate.py
-      - data/processed/utkface_metadata.csv
-      - data/raw/utkface_aligned_cropped/UTKFace
-    outs:
-      - data/processed/validation
-
-  train:
-    cmd: .venv/bin/python age_gender/train.py
-    deps:
-      - age_gender/train.py
-      - age_gender/config.py
-      - data/processed/splits/train.csv
-      - data/processed/splits/val.csv
-      - params.yaml
-    params:
-      - training
-      - model
-      - experiment
-    outs:
-      - models/gender_model.pt
-      - models/age_model.pt
-
-  eval:
-    cmd: .venv/bin/python age_gender/eval.py
-    deps:
-      - age_gender/eval.py
-      - age_gender/config.py
-      - models/gender_model.pt
-      - models/age_model.pt
-      - data/processed/splits/val.csv
-      - params.yaml
-    outs:
-      - models/evaluation
-
-  test:
-    cmd: .venv/bin/python age_gender/test.py
-    deps:
-      - age_gender/test.py
-      - age_gender/config.py
-      - models/gender_model.pt
-      - models/age_model.pt
-      - data/processed/splits/test.csv
-      - params.yaml
-    outs:
-      - models/test_results
+  fake_classification_pipeline:
+    cmd: dvc repro pipelines/fake_classification/dvc.yaml
