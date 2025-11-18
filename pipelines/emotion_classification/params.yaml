@@ -6,7 +6,7 @@ dataset:
     val: 0.15
     test: 0.15
 mlflow:
-  experiment_id: '4'
+  experiment_id: "4"
   experiment_name: emotion_classification
   run_id: a90bc793e451424fa50694dee3032877
   run_name: emotion_classification_200_epochs
@@ -19,7 +19,7 @@ storage:
 training:
   epochs: 1
   batch_size: 32
-  device: cuda  # Options: 'cuda' (NVIDIA GPU), 'gpu' (alias for cuda), 'mps' (Apple Silicon), 'cpu'
+  device: mps # Options: 'cuda' (NVIDIA GPU), 'gpu' (alias for cuda), 'mps' (Apple Silicon), 'cpu'
   lr: 0.001
   fraction: 1.0
   early_stopping_patience: 4

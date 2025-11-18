@@ -7,3 +7,6 @@ stages:
 
   emotion_classification_pipeline:
     cmd: dvc repro pipelines/emotion_classification/dvc.yaml
+
+  age_gender_pipeline:
+    cmd: dvc repro pipelines/age_gender/dvc.yaml

@@ -8,30 +8,44 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 import json
 import numpy as np
-
+from dotenv import load_dotenv
 # MLflow imports
-from config import MLFLOW_TRACKING_URI
 import mlflow
 import yaml
+import os
 
 # Load parameters
-with open('params.yaml', 'r') as f:
-    config = yaml.safe_load(f)
+with open('pipelines/age_gender/params.yaml', 'r') as f:
+    params = yaml.safe_load(f)
 
 # Configuration
-DATA_DIR = Path("data/raw/utkface_aligned_cropped/UTKFace")
-TEST_FILE = Path("data/processed/splits/test.csv")
-MODELS_DIR = Path("models")
-OUTPUT_DIR = Path("models/test_results")
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DATA_DIR = Path(params['dataset']['raw_dir'])
+TEST_FILE = Path(params['dataset']['processed_dir']) / "splits/test.csv"
+MODELS_DIR = Path("models/age_gender")
+OUTPUT_DIR = Path("reports/age_gender/test_results")
+# -------------------- Environment --------------------
+load_dotenv()
+mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
+if mlflow_uri:
+    mlflow.set_tracking_uri(mlflow_uri)
+mlflow_username = os.getenv("MLFLOW_TRACKING_USERNAME")
+mlflow_password = os.getenv("MLFLOW_TRACKING_PASSWORD")
+if mlflow_username and mlflow_password:
+    os.environ["MLFLOW_TRACKING_USERNAME"] = mlflow_username
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = mlflow_password
 
-# Configure MLflow
-if MLFLOW_TRACKING_URI:
-    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+run_name = params['mlflow'].get('run_name', 'default_run')
 
 # Set experiment
-mlflow.set_experiment(config['experiment']['name'])
-
+mlflow.set_experiment(params['mlflow']['experiment_name'])
+device_param = params['training']['device'].lower()
+if device_param == 'cuda' and torch.cuda.is_available():
+    DEVICE = torch.device('cuda')
+elif device_param == 'mps' and getattr(torch.backends, 'mps', None) is not None:
+    DEVICE = torch.device('mps')
+else:
+    DEVICE = torch.device('cpu')
+print("Using device:", DEVICE)
 
 def convert_to_python_types(obj):
     """Convert numpy/torch types to Python native types for JSON serialization"""

@@ -4,15 +4,18 @@ data_split.py - Split dataset into train/val/test
 
 import pandas as pd
 from pathlib import Path
+import yaml
 
+with open("pipelines/age_gender/params.yaml", "r") as f:
+    params = yaml.safe_load(f)
 
 # Configuration
-INPUT_FILE = Path("data/processed/utkface_metadata.csv")
-OUTPUT_DIR = Path("data/processed/splits")
-TRAIN_RATIO = 0.7
-VAL_RATIO = 0.15
-TEST_RATIO = 0.15
-SEED = 42
+INPUT_FILE = Path(params['dataset']['processed_dir']) / "utkface_metadata.csv"
+OUTPUT_DIR = Path(params['dataset']['processed_dir']) / "splits"
+TRAIN_RATIO = params['dataset']['split']['train']
+VAL_RATIO = params['dataset']['split']['val']
+TEST_RATIO = params['dataset']['split']['test']
+SEED = params['seed']
 
 
 def main():
