@@ -1,132 +1,110 @@
 schema: '2.0'
 stages:
   ingest:
-    cmd: python mlops_xoxo/data_ingest.py
+    cmd: .venv/bin/python age_gender/data_ingest.py
     deps:
-    - path: data/external/casioface/train.idx
+    - path: age_gender/data_ingest.py
       hash: md5
-      md5: 0b4801a39ba6237c891dcfb777eeb295
-      size: 8707814
-    - path: data/external/casioface/train.lst
+      md5: b826204a8e1410ef51f5ce9bb62c21ee
+      size: 1671
+    - path: data/raw/utkface_aligned_cropped/UTKFace
       hash: md5
-      md5: 99d49349533309391272473538054a0d
-      size: 73167925
-    - path: data/external/casioface/train.rec
-      hash: md5
-      md5: 459c18fd8152cc1d4a9484c3f0713d19
-      size: 2726043620
-    - path: mlops_xoxo/data_ingest.py
-      hash: md5
-      md5: 0178565d2db38e8391a153710e3a0095
-      size: 435
+      md5: 69f82d6acb3b8cdbbc77d5d67523b077.dir
+      size: 119986277
+      nfiles: 23708
     outs:
-    - path: data/raw
+    - path: data/processed/utkface_metadata.csv
       hash: md5
-      md5: 560985c1fe22c75212e70058f38e54cf.dir
-      size: 54198793
-      nfiles: 10000
+      md5: e7a834df8dad780a0e30674998f158b8
+      size: 1060691
   validate:
-    cmd: python mlops_xoxo/data_validate.py
+    cmd: python age_gender/data_validate.py
     deps:
-    - path: data/raw
+    - path: age_gender/data_validate.py
       hash: md5
-      md5: 560985c1fe22c75212e70058f38e54cf.dir
-      size: 54198793
-      nfiles: 10000
-    - path: mlops_xoxo/data_validate.py
+      md5: 994f439243b531bab953c1760a1a2fb8
+      size: 1952
+    - path: data/processed/utkface_metadata.csv
       hash: md5
-      md5: 1c5789c1633d13db7ad3df126e977ce4
-      size: 2739
+      md5: e7a834df8dad780a0e30674998f158b8
+      size: 1060691
+    - path: data/raw/utkface_aligned_cropped/UTKFace
+      hash: md5
+      md5: 69f82d6acb3b8cdbbc77d5d67523b077.dir
+      size: 119986277
+      nfiles: 23708
     outs:
-    - path: docs
+    - path: data/processed/validation
       hash: md5
-      md5: 96ee1fbc4eac3fe8b2a34f605fc229bd.dir
-      size: 229
+      md5: 33c12295d53e37d7ab0790e1a64ed46f.dir
+      size: 104
       nfiles: 1
   split:
-    cmd: python mlops_xoxo/data_split.py
+    cmd: .venv/bin/python age_gender/data_split.py
     deps:
-    - path: data/raw
+    - path: age_gender/data_split.py
       hash: md5
-      md5: 560985c1fe22c75212e70058f38e54cf.dir
-      size: 54198793
-      nfiles: 10000
-    - path: mlops_xoxo/data_split.py
+      md5: f4867ae815d560388386ee084105f2f1
+      size: 1394
+    - path: data/processed/utkface_metadata.csv
       hash: md5
-      md5: 606d8bb55310a97f0954609413aea4fe
-      size: 2166
+      md5: e7a834df8dad780a0e30674998f158b8
+      size: 1060691
     outs:
-    - path: data/processed
+    - path: data/processed/splits
       hash: md5
-      md5: eb3bcf78934442af201df7514f9b90fd.dir
-      size: 54642736
-      nfiles: 10001
+      md5: 1dbf57f1b4ecc5acd0d5e4b3cbaa2f2c.dir
+      size: 1060741
+      nfiles: 3
   train:
-    cmd: python mlops_xoxo/train.py > mlflow_run_id.txt
+    cmd: python age_gender/train.py
     deps:
-    - path: data/processed/train
+    - path: age_gender/train.py
       hash: md5
-      md5: 4ac4c8d19815cb820e949cc36854fe55.dir
-      size: 37781098
-      nfiles: 6974
-    - path: mlops_xoxo/train.py
+      md5: 1c977c4e221b9143a6477f0683909368
+      size: 5428
+    - path: data/processed/splits/train.csv
       hash: md5
-      md5: cbb9af958d6618721e592322726b9e32
-      size: 13609
-    - path: params.yaml
+      md5: 7a4582038dd111ed2d0d8f44b71a50ef
+      size: 742487
+    - path: data/processed/splits/val.csv
       hash: md5
-      md5: cea29f12363b7a1314959cd37aecf572
-      size: 619
-    params:
-      params.yaml:
-        training:
-          batch_size: 64
-          device: mps
-          embedding_size: 512
-          epochs: 200
-          lr: 0.0001
-          margin: 0.2
-          weight_decay: 0.0001
+      md5: 43d7de3c2b83502a33d4a408581f1ac0
+      size: 159118
     outs:
-    - path: models/face_embedding
+    - path: models/age_model.pt
       hash: md5
-      md5: 4359b01037a078e198f732d182a593b4.dir
-      size: 11776372
-      nfiles: 1
-    - path: reports/emissions.csv
+      md5: 2f7bc51bdc35518cafaa7df9eacf87f4
+      size: 9146315
+    - path: models/gender_model.pt
       hash: md5
-      md5: c36eba4469f664db8c785971058c47b1
-      size: 762
+      md5: 0615289ebc3a1f5ab230c4bf69b390a6
+      size: 9152395
   eval:
-    cmd: python mlops_xoxo/eval.py
+    cmd: python age_gender/eval.py
     deps:
-    - path: data/processed/val
+    - path: age_gender/eval.py
       hash: md5
-      md5: ac4974dcc1ca0214c2f1850995d16564.dir
-      size: 10708305
-      nfiles: 1975
-    - path: mlops_xoxo/eval.py
+      md5: 16569398ab1b05e758f8442b31a9a76c
+      size: 4024
+    - path: data/processed/splits/val.csv
       hash: md5
-      md5: bc23b922d8346287db9a2facb6f5acda
-      size: 5737
-    - path: models/face_embedding
+      md5: 43d7de3c2b83502a33d4a408581f1ac0
+      size: 159118
+    - path: models/age_model.pt
       hash: md5
-      md5: 4359b01037a078e198f732d182a593b4.dir
-      size: 11776372
-      nfiles: 1
-    - path: params.yaml
+      md5: 2f7bc51bdc35518cafaa7df9eacf87f4
+      size: 9146315
+    - path: models/gender_model.pt
       hash: md5
-      md5: cea29f12363b7a1314959cd37aecf572
-      size: 619
+      md5: 0615289ebc3a1f5ab230c4bf69b390a6
+      size: 9152395
     outs:
-    - path: reports/eval_predictions.json
+    - path: models/evaluation
       hash: md5
-      md5: 170cbac3c8b344ac55f18f8e62d40410
-      size: 243717
-    - path: reports/eval_summary.txt
-      hash: md5
-      md5: 9ab853074c0568c97c41f4e746fd4371
-      size: 85
+      md5: 2fdfd666034c085ccb3cc1f712083406.dir
+      size: 186
+      nfiles: 1
   register_model:
     cmd: "export MLFLOW_RUN_ID=$(cat mlflow_run_id.txt | grep 'MLFLOW_RUN_ID:' | cut
       -d ':' -f 2) \npython mlops_xoxo/register_model.py \n"
@@ -156,3 +134,7 @@ stages:
     cmd: dvc repro pipelines/fake_classification/dvc.yaml
   fake_classification_pipeline:
     cmd: dvc repro pipelines/fake_classification/dvc.yaml
+  emotion_classification_pipeline:
+    cmd: dvc repro pipelines/emotion_classification/dvc.yaml
+  age_gender_pipeline:
+    cmd: dvc repro pipelines/age_gender/dvc.yaml

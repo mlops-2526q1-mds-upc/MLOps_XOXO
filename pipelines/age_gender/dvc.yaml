@@ -1,49 +1,72 @@
 stages:
   ingest:
-    cmd: python mlops_xoxo/data_ingest.py
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/data_ingest.py
     deps:
-      - mlops_xoxo/data_ingest.py
-      - data/external/casioface/train.rec
-      - data/external/casioface/train.idx
-      - data/external/casioface/train.lst
+      - mlops_xoxo/age_gender/data_ingest.py
+      - data/raw/age_gender/UTKFace
     outs:
-      - data/raw
-
-  validate:
-    cmd: python mlops_xoxo/data_validate.py
-    deps:
-      - mlops_xoxo/data_validate.py
-      - data/raw
-    outs:
-      - docs
+      - data/processed/age_gender/utkface_metadata.csv
 
   split:
-    cmd: python mlops_xoxo/data_split.py
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/data_split.py
     deps:
-      - mlops_xoxo/data_split.py
-      - data/raw
+      - mlops_xoxo/age_gender/data_split.py
+      - data/processed/age_gender/utkface_metadata.csv
     outs:
-      - data/processed
+      - data/processed/age_gender/splits
+
+  validate:
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/data_validate.py
+    deps:
+      - mlops_xoxo/age_gender/data_validate.py
+      - data/processed/age_gender/utkface_metadata.csv
+      - data/raw/age_gender/UTKFace
+    outs:
+      - data/processed/age_gender/validation
 
   train:
-    cmd: python mlops_xoxo/train.py > mlflow_run_id.txt
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/train.py
     deps:
-      - mlops_xoxo/train.py
-      - data/processed/train
-      - params.yaml
+      - mlops_xoxo/age_gender/train.py
+      - mlops_xoxo/age_gender/config.py
+      - data/processed/age_gender/splits/train.csv
+      - data/processed/age_gender/splits/val.csv
     params:
-      - training
+      - pipelines/age_gender/params.yaml:
+          - training
+          - mlflow
     outs:
-      - models/face_embedding
-      - reports/emissions.csv
+      - models/age_gender/gender_model.pt
+      - models/age_gender/age_model.pt
 
   eval:
-    cmd: python mlops_xoxo/eval.py
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/eval.py
     deps:
-      - mlops_xoxo/eval.py
-      - models/face_embedding
-      - data/processed/val
-      - params.yaml
+      - mlops_xoxo/age_gender/eval.py
+      - mlops_xoxo/age_gender/config.py
+      - models/age_gender/gender_model.pt
+      - models/age_gender/age_model.pt
+      - data/processed/age_gender/splits/val.csv
+    params:
+      - pipelines/age_gender/params.yaml:
+          - mlflow
     outs:
-      - reports/eval_predictions.json
-      - reports/eval_summary.txt
+      - reports/age_gender/evaluation
+
+  test:
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/test.py
+    deps:
+      - mlops_xoxo/age_gender/test.py
+      - mlops_xoxo/age_gender/config.py
+      - models/age_gender/gender_model.pt
+      - models/age_gender/age_model.pt
+      - data/processed/age_gender/splits/test.csv
+      - pipelines/age_gender/params.yaml
+    outs:
+      - reports/age_gender/test_results

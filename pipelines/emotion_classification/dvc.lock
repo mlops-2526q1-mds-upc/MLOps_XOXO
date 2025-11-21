@@ -1,0 +1,121 @@
+schema: '2.0'
+stages:
+  ingest:
+    cmd: python mlops_xoxo/emotion_classification/data_ingest.py
+    deps:
+    - path: data/external/emotion_classification
+      hash: md5
+      md5: d751713988987e9331980363e24189ce.dir
+      size: 0
+      nfiles: 0
+    - path: mlops_xoxo/emotion_classification/data_ingest.py
+      hash: md5
+      md5: dcf7274c91e69377dbeaebe1c7a773d5
+      size: 992
+    outs:
+    - path: data/raw/emotion_classification/ingest_manifest.json
+      hash: md5
+      md5: 9ffabbf88798cec5c2464da464437746
+      size: 155
+  split:
+    cmd: python mlops_xoxo/emotion_classification/data_split.py
+    deps:
+    - path: data/raw/emotion_classification
+      hash: md5
+      md5: 1d1e54eb0322b7cbc99161b4f0090ade.dir
+      size: 62409633
+      nfiles: 35891
+    - path: mlops_xoxo/emotion_classification/data_split.py
+      hash: md5
+      md5: 331e7b7a1fadb78be49798f6e55a1063
+      size: 3782
+    outs:
+    - path: data/processed/emotion_classification
+      hash: md5
+      md5: 2e0af24702510d84b96f110d3fc04e40.dir
+      size: 56141736
+      nfiles: 32299
+  validate:
+    cmd: python mlops_xoxo/emotion_classification/data_validate.py
+    deps:
+    - path: data/raw/emotion_classification
+      hash: md5
+      md5: 1d1e54eb0322b7cbc99161b4f0090ade.dir
+      size: 62409633
+      nfiles: 35891
+    - path: mlops_xoxo/emotion_classification/data_validate.py
+      hash: md5
+      md5: 4bdd062bd9c3ebb98c760b4340cef732
+      size: 1306
+    outs:
+    - path: docs/emotion_classification
+      hash: md5
+      md5: 6d8a6d5da892bb2aaed4f61fdce3b2d1.dir
+      size: 147
+      nfiles: 1
+  train:
+    cmd: python mlops_xoxo/emotion_classification/train.py > mlflow_run_id.txt
+    deps:
+    - path: data/processed/emotion_classification/train
+      hash: md5
+      md5: d71e340a67699142e3c667856e9f5628.dir
+      size: 39272838
+      nfiles: 22604
+    - path: mlops_xoxo/emotion_classification/train.py
+      hash: md5
+      md5: d21a12d6b4f7595cfc24e4b274e8fb14
+      size: 12813
+    - path: pipelines/emotion_classification/params.yaml
+      hash: md5
+      md5: b2da20301c7b68b902d57de135f198a2
+      size: 671
+    params:
+      pipelines/emotion_classification/params.yaml:
+        training:
+          epochs: 1
+          batch_size: 32
+          device: mps
+          lr: 0.001
+          fraction: 1.0
+          early_stopping_patience: 4
+          save_onnx: false
+    outs:
+    - path: models/emotion_classification
+      hash: md5
+      md5: fb1a36a9640bc259f84737c617dfd076.dir
+      size: 178988560
+      nfiles: 2
+    - path: reports/emotion_classification/emissions.csv
+      hash: md5
+      md5: 8c37115999522dcce3280778eed96bd0
+      size: 787
+  eval:
+    cmd: python mlops_xoxo/emotion_classification/eval.py
+    deps:
+    - path: data/processed/emotion_classification/val
+      hash: md5
+      md5: 81651358795d568db4ad5a301f4fd1bd.dir
+      size: 8434004
+      nfiles: 4841
+    - path: mlops_xoxo/emotion_classification/eval.py
+      hash: md5
+      md5: f320f7d1d013d39ae214fbf025690bb6
+      size: 5306
+    - path: models/emotion_classification
+      hash: md5
+      md5: fb1a36a9640bc259f84737c617dfd076.dir
+      size: 178988560
+      nfiles: 2
+    - path: pipelines/emotion_classification/params.yaml
+      hash: md5
+      md5: b2da20301c7b68b902d57de135f198a2
+      size: 671
+    outs:
+    - path: reports/emotion_classification/eval_metrics.json
+      hash: md5
+      md5: 914820dda9bcb59aa3530d402859c835
+      size: 1487
+    - path: reports/emotion_classification/eval_summary.txt
+      hash: md5
+      md5: c2e1ad1fcca6af4eec74ca86f7f1362f
+      size: 596

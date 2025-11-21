@@ -1,30 +1,77 @@
-#!/usr/bin/env python3
 """
-Vérifie que le dataset UTKFace a bien été préparé
+data_validate.py - Validate dataset quality
 """
+
 import pandas as pd
 from pathlib import Path
+from PIL import Image
+import json
 import yaml
-with open("pipelines/age_gender/params.yaml", encoding="utf-8") as f:
+with open("pipelines/age_gender/params.yaml", "r") as f:
     params = yaml.safe_load(f)
+# Configuration
+DATA_DIR = Path(params['dataset']['raw_dir']+"/UTKFace")
+METADATA_FILE = Path(params['dataset']['processed_dir']) / "utkface_metadata.csv"
+OUTPUT_DIR = Path(params['dataset']['processed_dir']) / "validation"
 
-dir = params["dataset"]["processed_dir"]
-def verify_dataset(output_dir=dir):
-    output = Path(output_dir)
-    print("\n🔍 Vérification du dataset...")
 
-    checks = []
-    for split in ['train', 'val']:
-        img_dir = output / split / 'images'
-        csv_path = output / split / 'labels.csv'
-        img_count = len(list(img_dir.glob('*.jpg'))) if img_dir.exists() else 0
-        csv_count = len(pd.read_csv(csv_path)) if csv_path.exists() else 0
-        checks.append((split, img_count, csv_count))
+def main():
+    print("=" * 60)
+    print("DATA VALIDATION")
+    print("=" * 60)
+    
+    # Load metadata
+    df = pd.read_csv(METADATA_FILE)
+    print(f"\nChecking {len(df)} images...")
+    
+    # Check images
+    corrupted = []
+    missing = []
+    
+    for idx, row in df.iterrows():
+        img_path = DATA_DIR / row['filename']
+        
+        if not img_path.exists():
+            missing.append(row['filename'])
+            continue
+        
+        try:
+            img = Image.open(img_path)
+            img.verify()
+        except:
+            corrupted.append(row['filename'])
+    
+    # Results
+    valid = len(df) - len(corrupted) - len(missing)
+    print(f"\nResults:")
+    print(f"  Valid:     {valid}")
+    print(f"  Corrupted: {len(corrupted)}")
+    print(f"  Missing:   {len(missing)}")
+    
+    # Stats
+    print(f"\nDistribution:")
+    print(f"  Age: {df['age'].min()}-{df['age'].max()} (mean: {df['age'].mean():.1f})")
+    print(f"  Gender: {df['gender'].value_counts().to_dict()}")
+    
+    # Save report
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    report = {
+        'total': len(df),
+        'valid': valid,
+        'corrupted': len(corrupted),
+        'missing': len(missing),
+        'status': 'PASSED' if len(corrupted) == 0 else 'WARNING'
+    }
+    
+    report_path = OUTPUT_DIR / "validation_report.json"
+    with open(report_path, 'w') as f:
+        json.dump(report, f, indent=4)
+    
+    print(f"\nReport saved to: {report_path}")
+    print(f"Status: {report['status']}")
+    
+    return 0 if report['status'] == 'PASSED' else 1
 
-    print(f"\n{'Split':<10} {'Images':>10} {'CSV Entries':>15}")
-    print("-" * 40)
-    for name, img_count, csv_count in checks:
-        print(f"{name:<10} {img_count:>10} {csv_count:>15}")
 
 if __name__ == "__main__":
-    verify_dataset()
+    exit(main())
