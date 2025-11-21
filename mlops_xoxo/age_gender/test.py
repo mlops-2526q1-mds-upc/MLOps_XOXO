@@ -1,5 +1,5 @@
 """
-eval.py - Evaluate models on validation set with MLflow tracking
+test.py - Final test on test set with MLflow tracking
 """
 
 import pandas as pd
@@ -9,10 +9,10 @@ from pathlib import Path
 import json
 import numpy as np
 from dotenv import load_dotenv
-import os
 # MLflow imports
 import mlflow
 import yaml
+import os
 
 # Load parameters
 with open('pipelines/age_gender/params.yaml', 'r') as f:
@@ -20,9 +20,10 @@ with open('pipelines/age_gender/params.yaml', 'r') as f:
 
 # Configuration
 DATA_DIR = Path(params['dataset']['raw_dir'])
-VAL_FILE = Path(params['dataset']['processed_dir']) / "splits/val.csv"
+TEST_FILE = Path(params['dataset']['processed_dir']) / "splits/test.csv"
 MODELS_DIR = Path("models/age_gender")
-OUTPUT_DIR = Path("reports/age_gender/evaluation")
+OUTPUT_DIR = Path("reports/age_gender/test_results")
+# -------------------- Environment --------------------
 load_dotenv()
 mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
 if mlflow_uri:
@@ -34,7 +35,9 @@ if mlflow_username and mlflow_password:
     os.environ["MLFLOW_TRACKING_PASSWORD"] = mlflow_password
 
 run_name = params['mlflow'].get('run_name', 'default_run')
-run_name = params['mlflow'].get('run_name', 'default_run')
+
+# Set experiment
+mlflow.set_experiment(params['mlflow']['experiment_name'])
 device_param = params['training']['device'].lower()
 if device_param == 'cuda' and torch.cuda.is_available():
     DEVICE = torch.device('cuda')
@@ -43,10 +46,6 @@ elif device_param == 'mps' and getattr(torch.backends, 'mps', None) is not None:
 else:
     DEVICE = torch.device('cpu')
 print("Using device:", DEVICE)
-
-# Set experiment
-mlflow.set_experiment(params['mlflow']['experiment_name'])
-
 
 def convert_to_python_types(obj):
     """Convert numpy/torch types to Python native types for JSON serialization"""
@@ -69,7 +68,6 @@ def load_model(model_path):
     """Load trained model"""
     from train import SimpleModel
     
-    # Determine task from filename
     task = 'gender' if 'gender' in model_path.name else 'age'
     num_outputs = 2 if task == 'gender' else 1
     
@@ -81,8 +79,8 @@ def load_model(model_path):
     return model, task
 
 
-def evaluate(model, loader, task):
-    """Evaluate model"""
+def test(model, loader, task):
+    """Test model"""
     all_preds = []
     all_labels = []
     
@@ -103,67 +101,94 @@ def evaluate(model, loader, task):
     if task == 'gender':
         correct = sum(p == l for p, l in zip(all_preds, all_labels))
         accuracy = correct / len(all_labels)
+        
+        # Confusion matrix
+        cm = [[0, 0], [0, 0]]
+        for p, l in zip(all_preds, all_labels):
+            cm[int(l)][int(p)] += 1
+        
         return {
             'accuracy': float(accuracy),
             'correct': int(correct),
-            'total': int(len(all_labels))
+            'total': int(len(all_labels)),
+            'confusion_matrix': [[int(cm[0][0]), int(cm[0][1])],
+                                [int(cm[1][0]), int(cm[1][1])]]
         }
     else:
         errors = [abs(p - l) for p, l in zip(all_preds, all_labels)]
         mae = sum(errors) / len(errors)
+        rmse = (sum(e**2 for e in errors) / len(errors)) ** 0.5
+        
+        # Accuracy within thresholds
+        within_5 = sum(1 for e in errors if e <= 5) / len(errors) * 100
+        within_10 = sum(1 for e in errors if e <= 10) / len(errors) * 100
+        
         return {
             'mae': float(mae),
+            'rmse': float(rmse),
+            'within_5_years': float(within_5),
+            'within_10_years': float(within_10),
             'total': int(len(all_labels))
         }
 
 
 def main():
     print("=" * 60)
-    print("MODEL EVALUATION")
+    print("FINAL TEST")
     print("=" * 60)
     
-    # Load validation data
+    # Load test data
     from train import UTKFaceDataset, get_transforms
-    val_df = pd.read_csv(VAL_FILE)
-    print(f"\nValidation set: {len(val_df)} images")
+    test_df = pd.read_csv(TEST_FILE)
+    print(f"\nTest set: {len(test_df)} images")
     
     results = {}
     
-    # Evaluate each model (create MLflow runs)
+    # Test each model (create MLflow runs)
     for model_path in MODELS_DIR.glob("*_model.pt"):
         print(f"\n{'='*60}")
-        print(f"Evaluating: {model_path.name}")
+        print(f"Testing: {model_path.name}")
         print(f"{'='*60}")
         
         model, task = load_model(model_path)
         
-        dataset = UTKFaceDataset(val_df, DATA_DIR, get_transforms(), task)
+        dataset = UTKFaceDataset(test_df, DATA_DIR, get_transforms(), task)
         loader = DataLoader(dataset, batch_size=32, shuffle=False, num_workers=0)
         
-        # Start MLflow run for evaluation
-        with mlflow.start_run(run_name=f"{task}_evaluation") as run:
+        # Start MLflow run for testing
+        with mlflow.start_run(run_name=f"{task}_test") as run:
             
             # Log tags
-            mlflow.set_tag("stage", "evaluation")
+            mlflow.set_tag("stage", "test")
             mlflow.set_tag("model_type", task)
             
-            # Evaluate
-            metrics = evaluate(model, loader, task)
+            # Test
+            metrics = test(model, loader, task)
             results[task] = metrics
             
             # Log metrics to MLflow
             if task == 'gender':
-                mlflow.log_metric("eval_accuracy", metrics['accuracy'])
+                mlflow.log_metric("test_accuracy", metrics['accuracy'])
+                mlflow.log_metric("test_correct", metrics['correct'])
                 print(f"Accuracy: {metrics['accuracy']*100:.2f}%")
+                print(f"Confusion Matrix:")
+                print(f"  [[{metrics['confusion_matrix'][0][0]}, {metrics['confusion_matrix'][0][1]}],")
+                print(f"   [{metrics['confusion_matrix'][1][0]}, {metrics['confusion_matrix'][1][1]}]]")
             else:
-                mlflow.log_metric("eval_mae", metrics['mae'])
+                mlflow.log_metric("test_mae", metrics['mae'])
+                mlflow.log_metric("test_rmse", metrics['rmse'])
+                mlflow.log_metric("test_within_5_years", metrics['within_5_years'])
+                mlflow.log_metric("test_within_10_years", metrics['within_10_years'])
                 print(f"MAE: {metrics['mae']:.2f} years")
+                print(f"RMSE: {metrics['rmse']:.2f} years")
+                print(f"Within ±5 years: {metrics['within_5_years']:.1f}%")
+                print(f"Within ±10 years: {metrics['within_10_years']:.1f}%")
             
             print(f"✅ MLflow Run ID: {run.info.run_id}")
     
     # Save results (with type conversion)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = OUTPUT_DIR / "eval_results.json"
+    output_path = OUTPUT_DIR / "test_results.json"
     
     # Convert all numpy/torch types to Python types
     results_clean = convert_to_python_types(results)

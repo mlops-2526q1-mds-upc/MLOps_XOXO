@@ -142,7 +142,7 @@ def main():
         transforms.Normalize(mean=[0.5], std=[0.5])
     ])
 
-    data_root = Path(params['dataset']['processed_dir']) / 'emotion'
+    data_root = Path(params['dataset']['processed_dir']) / 'emotion_classification'
     train_dir = data_root / 'train'
     val_dir = data_root / 'val'
 

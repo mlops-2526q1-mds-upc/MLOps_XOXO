@@ -15,8 +15,8 @@ import yaml
 with open("pipelines/emotion_classification/params.yaml", encoding="utf-8") as f:
     params = yaml.safe_load(f)
 
-INPUT_DIR = Path(params["dataset"]["raw_dir"]) / "emotion"
-OUTPUT_DIR = Path(params["dataset"]["processed_dir"]) / "emotion"
+INPUT_DIR = Path(params["dataset"]["raw_dir"]) / "emotion_classification"
+OUTPUT_DIR = Path(params["dataset"]["processed_dir"]) / "emotion_classification"
 TRAIN_RATIO = params["dataset"]["split"]["train"]
 VAL_RATIO = params["dataset"]["split"]["val"]
 TEST_RATIO = params["dataset"]["split"]["test"]

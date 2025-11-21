@@ -8,7 +8,7 @@ import json
 import time
 
 
-RAW_DIR = Path("data/raw/emotion")
+RAW_DIR = Path("data/raw/emotion_classification")
 MANIFEST = RAW_DIR / "ingest_manifest.json"
 
 
