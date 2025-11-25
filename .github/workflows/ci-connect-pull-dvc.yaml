@@ -1,11 +1,6 @@
 name: Test DVC Connection and Pull Files
 
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:  # Allows manual triggering
+on: [push, pull_request]
 
 jobs:
   test-dvc-connection:
