@@ -6,10 +6,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    env:
-      DAGSHUB_USER: ${{ secrets.DAGSHUB_DVC_USER }}
-      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_DVC_PASS }}
-
     strategy:
       matrix:
         python-version: [3.13]
@@ -23,7 +19,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # --- Dependency Installation (Using uv for speed and pyproject.toml) ---
+      # --- Install DVC first as a standalone package ---
+      - name: Install DVC with pip
+        run: pip install "dvc[dagshub]"
+
+      # --- Then use uv for the rest of dependencies ---
       - name: Install uv
         run: pip install uv
         
@@ -34,9 +34,6 @@ jobs:
         run: uv pip install -e .
         
       # --- DVC Setup and Configuration ---
-      
-      - name: Install DVC with DAGsHub support
-        run: uv pip install "dvc[dagshub]"
 
       - name: Initialize DVC (if not already initialized)
         run: |
@@ -63,7 +60,9 @@ jobs:
           dvc remote modify origin --local password "$DAGSHUB_TOKEN"
           
           # Verify configuration
+          echo "DVC remotes:"
           dvc remote list
+          echo "DVC origin configuration:"
           dvc remote modify origin --list
         shell: bash
 
