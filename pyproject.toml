@@ -61,5 +61,6 @@ omit = [
     "mlops_xoxo/test.py",
     "mlops_xoxo/test_nested_mlflow.py",
 ]
-[tool.setuptools.packages]
+[tool.setuptools]
 packages = ["mlops_xoxo"]
+
