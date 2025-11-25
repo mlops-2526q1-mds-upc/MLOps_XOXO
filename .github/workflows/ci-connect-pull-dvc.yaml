@@ -29,8 +29,8 @@ jobs:
         
         echo "Modifying existing remote..."
         dvc remote modify origin auth basic
-        dvc remote modify origin user ${{ secrets.DAGSHUB_USERNAME }}
-        dvc remote modify origin password ${{ secrets.DAGSHUB_TOKEN }}
+        dvc remote modify origin user ${{ secrets.DAGSHUB_DVC_USER }}
+        dvc remote modify origin password ${{ secrets.DAGSHUB_DVC_PASS }}
         
         echo "Updated remote configuration:"
         dvc remote list
