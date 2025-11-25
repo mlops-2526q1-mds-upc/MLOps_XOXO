@@ -7,8 +7,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DAGSHUB_DVC_USER: ${{ secrets.DAGSHUB_DVC_USER }}
-      DAGSHUB_DVC_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_DVC_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_DVC_PASS }}
 
     strategy:
       matrix:
@@ -23,81 +23,80 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # --- Dependency Installation (Using uv for speed and pypoject.toml) ---
+      # --- Dependency Installation (Using uv for speed and pyproject.toml) ---
       - name: Install uv
         run: pip install uv
         
       - name: Install dependencies from pyproject.toml
-        # Install all dependencies (including torch) and dev dependencies
-        run: |
-          uv sync
-          # You might need to install torch with a specific index URL if running into issues, e.g.:
-          # uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-          # Since you didn't specify, we use the simple uv sync.
+        run: uv sync
 
       - name: Install project (editable)
         run: uv pip install -e .
         
-      # --- DVC Data/Model Loading and API Test ---
+      # --- DVC Setup and Configuration ---
       
-      - name: Install DVC dependencies (if not in pyproject.toml)
-        # Assuming DVC is included in pyproject.toml, but adding as a safety step
-        run: uv pip install dvc 
+      - name: Install DVC with DAGsHub support
+        run: uv pip install "dvc[dagshub]"
 
-      - name: 🔑 Configure DVC Credentials
-        # Pass the secrets directly into the step's environment block
-        env:
-          DVC_USER: ${{ secrets.DAGSHUB_DVC_USER }}
-          DVC_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
+      - name: Initialize DVC (if not already initialized)
         run: |
-          source .venv/bin/activate
-          # Use the environment variables defined in this step's env block
-          dvc remote modify origin user ${DAGSHUB_USER}
-          dvc remote modify origin password ${DAGSHUB_PASSWORD}
-          dvc config --local core.ask_password false
-          echo "DVC remote configured for origin."
+          # Check if .dvc directory exists, if not initialize
+          if [ ! -d ".dvc" ]; then
+            dvc init --no-scm
+          fi
+        shell: bash
+
+      - name: Configure DVC remote with DAGsHub authentication
+        env:
+          DAGSHUB_USER: ${{ secrets.DAGSHUB_DVC_USER }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_DVC_PASS }}
+        run: |
+          # Remove existing remote if it exists to avoid conflicts
+          dvc remote remove origin || true
+          
+          # Add remote with proper URL format for DAGsHub
+          dvc remote add origin https://dagshub.com/${{ github.repository_owner }}/${{ github.event.repository.name }}.dvc
+          
+          # Configure authentication
+          dvc remote modify origin --local auth basic
+          dvc remote modify origin --local user "$DAGSHUB_USER"
+          dvc remote modify origin --local password "$DAGSHUB_TOKEN"
+          
+          # Verify configuration
+          dvc remote list
+          dvc remote modify origin --list
         shell: bash
 
       - name: ⬇️ Pull DVC Tracked Files (Models/Data)
-        # We need to activate the environment here as well.
         run: |
-          source .venv/bin/activate
           dvc pull -v
         shell: bash
 
-      - name: ✨ Run DVC Repro
-        # And here.
+      - name: ✨ Run DVC Repro (if dvc.yaml exists)
         run: |
-          source .venv/bin/activate
-          dvc repro
+          if [ -f "dvc.yaml" ]; then
+            dvc repro -v
+          else
+            echo "No dvc.yaml found, skipping dvc repro"
+          fi
         shell: bash
         
       # --- API Readiness Test ---
       
       - name: 🧪 Validate API Model Loading
-        # The 'python -c' command works because we are implicitly using the python from the venv
-        # but activating is cleaner if subsequent python commands are used.
         run: |
-          source .venv/bin/activate
           python -c "import api.api; print(api.api.get_model_info())"
         shell: bash
-      # If the API file doesn't support a simple load-only mode, we can modify the test command.
-      # Since your api.py calls sys.exit(1) on failure to load models, simply running the top section is a good test.
-      # A simple command that executes the script's setup logic without starting the uvicorn server:
+
       - name: Validate all models load correctly
         run: python -c "import api; api.get_model_info()"
-        # This command imports your api.py script, triggering all model loading,
-        # and then calls a simple function to verify no exceptions occurred during setup.
 
       # --- Run your existing tests ---
-      # ... Your original test steps (e.g., pytest) here ...
       - name: Run unit and integration tests
         run: |
           pytest --cov-report=xml:reports/coverage.xml
-          # Or your original pytest command
 
       - name: Run linter
         run: |
           flake8 .
           pylint mlops_xoxo/
-          # Or your original linting commands 
