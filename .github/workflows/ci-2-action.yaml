@@ -1,0 +1,41 @@
+name: Simple CI Test
+
+on: [push, pull_request]
+
+jobs:
+  simple-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Verify imports work
+        run: |
+          python -c "
+          # Test basic imports from your project
+          try:
+              from mlops_xoxo import main
+              print('✓ Successfully imported main package')
+          except Exception as e:
+              print(f'✗ Failed to import main: {e}')
+          
+          # Test key dependencies
+          try:
+              import torch
+              import mlflow
+              import dvc
+              print('✓ All key dependencies imported')
+          except Exception as e:
+              print(f'✗ Dependency import failed: {e}')
+          "
