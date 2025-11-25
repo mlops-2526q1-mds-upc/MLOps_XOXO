@@ -116,30 +116,56 @@ jobs:
         dvc remote modify origin user "$DAGSHUB_DVC_USER"
         dvc remote modify origin password "$DAGSHUB_DVC_PASS"
 
-    - name: Download specific model files only
+    - name: Download only best models
       run: |
-        echo "📥 Downloading model files for inference testing..."
+        echo "📥 Downloading only the best model files..."
+        
+        # Download only the best models for each pipeline
         dvc fetch models/age_gender/gender_model.pt
         dvc fetch models/age_gender/age_model.pt
-        dvc fetch models/emotion_classification/
-        dvc fetch models/face_embedding/
-        dvc fetch models/fake_classification/
-        echo "✅ Model files fetched to DVC cache"
+        dvc fetch models/emotion_classification/best_model.pth  # Only best, not last
+        dvc fetch models/face_embedding/mobilenetv2_arcface_model.pth
+        dvc fetch models/fake_classification/model_best.pth     # Only best, not last
+        
+        echo "✅ Best model files fetched to DVC cache"
 
-    - name: Pull models to workspace
+    - name: Pull only best models to workspace
       run: |
-        echo "🔄 Pulling models to workspace..."
+        echo "🔄 Pulling best models to workspace..."
+        
+        # Pull only the best models we need for inference
         dvc pull models/age_gender/gender_model.pt
         dvc pull models/age_gender/age_model.pt
-        dvc pull models/emotion_classification/
-        dvc pull models/face_embedding/
-        dvc pull models/fake_classification/
-        echo "✅ Models pulled to workspace"
+        dvc pull models/emotion_classification/best_model.pth   # Only best (43M vs 128M)
+        dvc pull models/face_embedding/mobilenetv2_arcface_model.pth
+        dvc pull models/fake_classification/model_best.pth      # Only best
+        
+        echo "✅ Best models pulled to workspace"
 
-    - name: Verify downloaded models
+    - name: Verify downloaded best models
       run: |
-        echo "🔍 Verifying downloaded model files..."
-        find models/ -type f -name "*.pt" -o -name "*.pth" -o -name "*.h5" | while read file; do
-          size=$(du -h "$file" 2>/dev/null | cut -f1 || echo "MISSING")
-          echo "📄 $file - $size"
+        echo "🔍 Verifying downloaded best model files..."
+        
+        # Check only the best models we actually downloaded
+        models=(
+          "models/age_gender/gender_model.pt"
+          "models/age_gender/age_model.pt" 
+          "models/emotion_classification/best_model.pth"
+          "models/face_embedding/mobilenetv2_arcface_model.pth"
+          "models/fake_classification/model_best.pth"
+        )
+        
+        total_saved=0
+        for model in "${models[@]}"; do
+          if [ -f "$model" ]; then
+            size=$(du -b "$model" | cut -f1)
+            size_mb=$(echo "scale=1; $size / 1024 / 1024" | bc)
+            echo "✅ $model - ${size_mb}M"
+          else
+            echo "❌ $model - MISSING"
+            exit 1
+          fi
         done
+        
+        echo "📊 Summary: Downloaded 5 best models (skipped last_model.pth and model_last.pth)"
+        echo "💾 Saved: ~85M by skipping emotion last_model.pth (128M → 43M)"
