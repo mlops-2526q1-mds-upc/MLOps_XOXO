@@ -211,7 +211,6 @@ jobs:
         # Try alternative paths for fake_classification
         dvc pull data/processed/fake_classification/split/ || echo "fake_classification/split not found"
         dvc pull data/processed/fake_classification/val/ || echo "fake_classification/val not found"
-        dvc pull data/external/fake_classification/ || echo "external/fake_classification not found"
         
         echo "✅ Available data downloaded"
 
@@ -226,7 +225,6 @@ jobs:
           "data/processed/fake_classification"
           "data/processed/fake_classification/split"
           "data/processed/fake_classification/val"
-          "data/external/fake_classification"
         )
         
         echo "📁 Data directory contents:"
