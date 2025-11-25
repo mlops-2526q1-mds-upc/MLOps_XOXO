@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies from pyproject.toml
         # Install all dependencies (including torch) and dev dependencies
         run: |
-          uv sync --with dev
+          uv sync
           # You might need to install torch with a specific index URL if running into issues, e.g.:
           # uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
           # Since you didn't specify, we use the simple uv sync.
