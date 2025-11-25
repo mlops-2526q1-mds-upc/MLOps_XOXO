@@ -40,3 +40,9 @@ jobs:
         echo "📡 Testing DVC remote configuration..."
         dvc remote list
         echo "✅ DVC remote configured successfully"
+
+    - name: Test with DVC doctor
+      run: |
+        echo "🏥 Running DVC doctor to check configuration..."
+        dvc doctor
+        echo "✅ DVC system check completed"
