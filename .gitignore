@@ -197,6 +197,3 @@ cython_debug/
 powermetrics_log.txt
 
 /data
-
-.github
-uv.lock
