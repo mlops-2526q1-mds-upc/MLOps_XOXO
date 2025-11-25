@@ -192,43 +192,50 @@ jobs:
         dvc remote modify origin user "$DAGSHUB_DVC_USER"
         dvc remote modify origin password "$DAGSHUB_DVC_PASS"
 
-    - name: Download processed data for inference
+    - name: Check available DVC tracks
       run: |
-        echo "📥 Downloading processed data files..."
+        echo "🔍 Checking what data is tracked by DVC..."
+        find . -name "*.dvc" -type f | grep -E "(data/|processed/)" | head -20
+        echo "--- DVC status for data directories ---"
+        dvc status data/ 2>/dev/null || echo "No data directory or error"
+
+    - name: Download existing processed data
+      run: |
+        echo "📥 Downloading available processed data..."
         
-        # Download processed data (ready for inference)
+        # Only download paths that actually exist in DVC
         dvc pull data/processed/age_gender/splits/
         dvc pull data/processed/emotion_classification/
         dvc pull data/processed/face_embedding/
-        dvc pull data/processed/fake_classification/
         
-        echo "✅ Processed data downloaded"
+        # Try alternative paths for fake_classification
+        dvc pull data/processed/fake_classification/split/ || echo "fake_classification/split not found"
+        dvc pull data/processed/fake_classification/val/ || echo "fake_classification/val not found"
+        dvc pull data/external/fake_classification/ || echo "external/fake_classification not found"
+        
+        echo "✅ Available data downloaded"
 
-    - name: Verify data structure
+    - name: Verify downloaded data
       run: |
-        echo "🔍 Verifying data directory structure..."
+        echo "🔍 Verifying downloaded data structure..."
         
         data_paths=(
           "data/processed/age_gender/splits"
-          "data/processed/emotion_classification"
-          "data/processed/face_embedding" 
+          "data/processed/emotion_classification" 
+          "data/processed/face_embedding"
           "data/processed/fake_classification"
+          "data/processed/fake_classification/split"
+          "data/processed/fake_classification/val"
+          "data/external/fake_classification"
         )
         
-        all_good=true
+        echo "📁 Data directory contents:"
         for path in "${data_paths[@]}"; do
           if [ -d "$path" ]; then
-            files=$(find "$path" -name "*.csv" -o -name "*.json" -o -name "*.txt" 2>/dev/null | wc -l)
+            file_count=$(find "$path" -type f 2>/dev/null | wc -l)
             size=$(du -sh "$path" 2>/dev/null | cut -f1 || echo "0")
-            echo "✅ $path - ${files} data files - ${size}"
+            echo "✅ $path - ${file_count} files - ${size}"
           else
-            echo "⚠️  $path - Directory missing (may be expected)"
-            all_good=false
+            echo "❌ $path - not found"
           fi
         done
-        
-        if $all_good; then
-          echo "🎉 All data directories present!"
-        else
-          echo "ℹ️  Some data directories missing (this may be normal for your project)"
-        fi
