@@ -22,17 +22,22 @@ jobs:
         python -m pip install --upgrade pip
         pip install dvc dvc-http
 
-    - name: Configure DVC remote
+    - name: Configure DVC remote (modify only)
       run: |
-        dvc remote add origin https://dagshub.com/pawarit.jamjod/MLOps_XOXO.dvc
+        echo "Current DVC remotes:"
+        dvc remote list
+        
+        echo "Modifying existing remote..."
         dvc remote modify origin auth basic
-        dvc remote modify origin user ${{ secrets.DAGSHUB_DVC_USER}}
-        dvc remote modify origin password ${{ secrets.DAGSHUB_DVC_PASS }}
+        dvc remote modify origin user ${{ secrets.DAGSHUB_USERNAME }}
+        dvc remote modify origin password ${{ secrets.DAGSHUB_TOKEN }}
+        
+        echo "Updated remote configuration:"
+        dvc remote list
 
     - name: Test DVC connection
       run: |
         echo "Testing DVC remote connection..."
-        dvc remote list
         dvc fetch --all -v
 
     - name: Pull DVC files
@@ -42,7 +47,7 @@ jobs:
 
     - name: Verify pulled files
       run: |
-        echo "Verifying DVC files..."
+        echo "DVC status:"
         dvc status
-        find . -name "*.dvc" -exec echo "DVC file: {}" \;
-        # Add specific file checks based on your project structure
+        echo "Pulled files:"
+        find . -type f -not -path "./.git/*" -not -path "./.github/*" | head -20
