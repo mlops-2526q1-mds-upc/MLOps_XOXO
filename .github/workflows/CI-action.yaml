@@ -72,9 +72,6 @@ jobs:
       - name: Verify imports work
         run: |
           python -c "
-          # Test basic imports
-          
-          # Test key dependencies
           try:
               import torch
               import mlflow
@@ -90,3 +87,59 @@ jobs:
               print(f'✗ Unexpected error: {e}')
               exit(1)
           "
+
+  download-models:
+    name: Download Models for Inference
+    runs-on: ubuntu-latest
+    needs: test-dvc-connection
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install DVC and dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install dvc dvc-http
+
+    - name: Configure DVC remote
+      env:
+        DAGSHUB_DVC_USER: ${{ secrets.DAGSHUB_DVC_USER }}
+        DAGSHUB_DVC_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
+      run: |
+        dvc remote modify origin auth basic
+        dvc remote modify origin user "$DAGSHUB_DVC_USER"
+        dvc remote modify origin password "$DAGSHUB_DVC_PASS"
+
+    - name: Download specific model files only
+      run: |
+        echo "📥 Downloading model files for inference testing..."
+        dvc fetch models/age_gender/gender_model.pt
+        dvc fetch models/age_gender/age_model.pt
+        dvc fetch models/emotion_classification/
+        dvc fetch models/face_embedding/
+        dvc fetch models/fake_classification/
+        echo "✅ Model files fetched to DVC cache"
+
+    - name: Pull models to workspace
+      run: |
+        echo "🔄 Pulling models to workspace..."
+        dvc pull models/age_gender/gender_model.pt
+        dvc pull models/age_gender/age_model.pt
+        dvc pull models/emotion_classification/
+        dvc pull models/face_embedding/
+        dvc pull models/fake_classification/
+        echo "✅ Models pulled to workspace"
+
+    - name: Verify downloaded models
+      run: |
+        echo "🔍 Verifying downloaded model files..."
+        find models/ -type f -name "*.pt" -o -name "*.pth" -o -name "*.h5" | while read file; do
+          size=$(du -h "$file" 2>/dev/null | cut -f1 || echo "MISSING")
+          echo "📄 $file - $size"
+        done
