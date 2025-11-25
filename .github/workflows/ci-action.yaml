@@ -6,6 +6,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      DAGSHUB_DVC_USER: ${{ secrets.DAGSHUB_DVC_USER }}
+      DAGSHUB_DVC_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
+
     strategy:
       matrix:
         python-version: [3.13]
@@ -41,14 +45,18 @@ jobs:
         run: uv pip install dvc 
 
       - name: 🔑 Configure DVC Credentials
-        # Use 'source .venv/bin/activate' to ensure the DVC command can be found in the PATH.
+        # Pass the secrets directly into the step's environment block
+        env:
+          DVC_USER: ${{ secrets.DAGSHUB_DVC_USER }}
+          DVC_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
         run: |
           source .venv/bin/activate
-          dvc remote modify origin user ${DAGSHUB_DVC_USER}
-          dvc remote modify origin password ${DAGSHUB_DVC_PASS}
+          # Use the environment variables defined in this step's env block
+          dvc remote modify origin user ${DAGSHUB_USER}
+          dvc remote modify origin password ${DAGSHUB_PASSWORD}
           dvc config --local core.ask_password false
           echo "DVC remote configured for origin."
-        shell: bash # Ensure bash is used for the source command
+        shell: bash
 
       - name: ⬇️ Pull DVC Tracked Files (Models/Data)
         # We need to activate the environment here as well.
