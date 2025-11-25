@@ -43,7 +43,7 @@ jobs:
     - name: Pull DVC files
       run: |
         echo "Pulling DVC files..."
-        dvc pull --all -v
+        dvc pull -v
 
     - name: Verify pulled files
       run: |
