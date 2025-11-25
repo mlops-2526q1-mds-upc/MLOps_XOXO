@@ -38,7 +38,7 @@ jobs:
     - name: Test DVC connection
       run: |
         echo "Testing DVC remote connection..."
-        dvc fetch --all -v
+        dvc fetch -v
 
     - name: Pull DVC files
       run: |
