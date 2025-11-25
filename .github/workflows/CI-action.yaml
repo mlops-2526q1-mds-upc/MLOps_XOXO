@@ -169,3 +169,66 @@ jobs:
         
         echo "📊 Summary: Downloaded 5 best models (skipped last_model.pth and model_last.pth)"
         echo "💾 Saved: ~85M by skipping emotion last_model.pth (128M → 43M)"
+
+  download-data:
+    name: Download Processed Data
+    runs-on: ubuntu-latest
+    needs: test-dvc-connection
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python and DVC
+      run: |
+        pip install dvc dvc-http
+
+    - name: Configure DVC
+      env:
+        DAGSHUB_DVC_USER: ${{ secrets.DAGSHUB_DVC_USER }}
+        DAGSHUB_DVC_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
+      run: |
+        dvc remote modify origin auth basic
+        dvc remote modify origin user "$DAGSHUB_DVC_USER"
+        dvc remote modify origin password "$DAGSHUB_DVC_PASS"
+
+    - name: Download processed data for inference
+      run: |
+        echo "📥 Downloading processed data files..."
+        
+        # Download processed data (ready for inference)
+        dvc pull data/processed/age_gender/splits/
+        dvc pull data/processed/emotion_classification/
+        dvc pull data/processed/face_embedding/
+        dvc pull data/processed/fake_classification/
+        
+        echo "✅ Processed data downloaded"
+
+    - name: Verify data structure
+      run: |
+        echo "🔍 Verifying data directory structure..."
+        
+        data_paths=(
+          "data/processed/age_gender/splits"
+          "data/processed/emotion_classification"
+          "data/processed/face_embedding" 
+          "data/processed/fake_classification"
+        )
+        
+        all_good=true
+        for path in "${data_paths[@]}"; do
+          if [ -d "$path" ]; then
+            files=$(find "$path" -name "*.csv" -o -name "*.json" -o -name "*.txt" 2>/dev/null | wc -l)
+            size=$(du -sh "$path" 2>/dev/null | cut -f1 || echo "0")
+            echo "✅ $path - ${files} data files - ${size}"
+          else
+            echo "⚠️  $path - Directory missing (may be expected)"
+            all_good=false
+          fi
+        done
+        
+        if $all_good; then
+          echo "🎉 All data directories present!"
+        else
+          echo "ℹ️  Some data directories missing (this may be normal for your project)"
+        fi
