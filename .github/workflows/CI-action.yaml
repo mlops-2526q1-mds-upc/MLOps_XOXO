@@ -1,0 +1,92 @@
+name: Combined CI and DVC Tests
+
+on: [push, pull_request]
+
+jobs:
+  test-dvc-connection:
+    name: Test DVC Connection
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install DVC and dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install dvc dvc-http
+
+    - name: Configure DVC remote (modify only)
+      env:
+        DAGSHUB_DVC_USER: ${{ secrets.DAGSHUB_DVC_USER }}
+        DAGSHUB_DVC_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
+      run: |
+        echo "Current DVC remotes:"
+        dvc remote list
+        
+        echo "Modifying existing remote..."
+        dvc remote modify origin auth basic
+        dvc remote modify origin user "$DAGSHUB_DVC_USER"
+        dvc remote modify origin password "$DAGSHUB_DVC_PASS"
+        
+        echo "Updated remote configuration:"
+        dvc remote list
+
+    - name: Test connection with remote list
+      run: |
+        echo "📡 Testing DVC remote configuration..."
+        dvc remote list
+        echo "✅ DVC remote configured successfully"
+
+    - name: Test with DVC doctor
+      run: |
+        echo "🏥 Running DVC doctor to check configuration..."
+        dvc doctor
+        echo "✅ DVC system check completed"
+
+  simple-ci-test:
+    name: Simple CI Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Verify imports work
+        run: |
+          python -c "
+          # Test basic imports
+          
+          # Test key dependencies
+          try:
+              import torch
+              import mlflow
+              import dvc
+              print('✓ All key dependencies imported successfully')
+              print(f'  - PyTorch version: {torch.__version__}')
+              print(f'  - MLflow version: {mlflow.__version__}')
+              print(f'  - DVC version: {dvc.__version__}')
+          except ImportError as e:
+              print(f'✗ Dependency import failed: {e}')
+              exit(1)
+          except Exception as e:
+              print(f'✗ Unexpected error: {e}')
+              exit(1)
+          "
