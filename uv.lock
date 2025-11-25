@@ -1997,7 +1997,6 @@ dev = [
 requires-dist = [
     { name = "codecarbon", specifier = ">=3.0.5" },
     { name = "dotenv" },
-    { name = "dvc" },
     { name = "dvc", specifier = ">=3.63.0" },
     { name = "facenet-pytorch" },
     { name = "fastapi", specifier = ">=0.117.1" },

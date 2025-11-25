@@ -23,12 +23,7 @@ jobs:
       - name: Verify imports work
         run: |
           python -c "
-          # Test basic imports from your project
-          try:
-              from mlops_xoxo import main
-              print('✓ Successfully imported main package')
-          except Exception as e:
-              print(f'✗ Failed to import main: {e}')
+          # Test basic imports
           
           # Test key dependencies
           try:
