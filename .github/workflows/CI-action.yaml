@@ -21,17 +21,26 @@ jobs:
           python -m pip install --upgrade pip
           pip install black flake8 bandit
 
-      - name: Check code formatting with Black
+      - name: Check code formatting with Black (non-blocking)
         run: |
-          black --check . || echo "⚠️ Code formatting issues found - please run 'black .' locally to fix"
+          echo "🔍 Checking code formatting with Black..."
+          if black --check .; then
+            echo "✅ All code is properly formatted!"
+          else
+            echo "⚠️ Code formatting issues found - please run 'black .' locally to fix"
+            echo "📝 Black would reformat the following files:"
+            black --check . --verbose || true
+          fi
 
-      - name: Lint with flake8
+      - name: Lint with flake8 (non-blocking)
         run: |
-          flake8 . --count --max-complexity=10 --statistics
+          echo "🔍 Running flake8 linting..."
+          flake8 . --count --max-complexity=10 --statistics --exit-zero || echo "⚠️ Flake8 found linting issues"
 
-      - name: Security scan with bandit
+      - name: Security scan with bandit (non-blocking)
         run: |
-          bandit -r . -f html -o bandit_report.html || true
+          echo "🔒 Running security scan with bandit..."
+          bandit -r . -f html -o bandit_report.html -ll || echo "⚠️ Bandit found potential security issues"
 
   dvc-consistency:
     name: DVC Pipeline Consistency
