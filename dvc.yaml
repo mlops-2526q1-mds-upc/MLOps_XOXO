@@ -1,49 +1,12 @@
 stages:
-  ingest:
-    cmd: python mlops_xoxo/data_ingest.py
-    deps:
-      - mlops_xoxo/data_ingest.py
-      - data/external/casioface/train.rec
-      - data/external/casioface/train.idx
-      - data/external/casioface/train.lst
-    outs:
-      - data/raw
+  face_embedding_pipeline:
+    cmd: dvc repro pipelines/face_embedding/dvc.yaml
 
-  validate:
-    cmd: python mlops_xoxo/data_validate.py
-    deps:
-      - mlops_xoxo/data_validate.py
-      - data/raw
-    outs:
-      - docs
+  fake_classification_pipeline:
+    cmd: dvc repro pipelines/fake_classification/dvc.yaml
 
-  split:
-    cmd: python mlops_xoxo/data_split.py
-    deps:
-      - mlops_xoxo/data_split.py
-      - data/raw
-    outs:
-      - data/processed
+  emotion_classification_pipeline:
+    cmd: dvc repro pipelines/emotion_classification/dvc.yaml
 
-  train:
-    cmd: python mlops_xoxo/train.py > mlflow_run_id.txt
-    deps:
-      - mlops_xoxo/train.py
-      - data/processed/train
-      - params.yaml
-    params:
-      - training
-    outs:
-      - models/face_embedding
-      - reports/emissions.csv
-
-  eval:
-    cmd: python mlops_xoxo/eval.py
-    deps:
-      - mlops_xoxo/eval.py
-      - models/face_embedding
-      - data/processed/val
-      - params.yaml
-    outs:
-      - reports/eval_predictions.json
-      - reports/eval_summary.txt
+  age_gender_pipeline:
+    cmd: dvc repro pipelines/age_gender/dvc.yaml

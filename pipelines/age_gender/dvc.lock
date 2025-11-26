@@ -1,0 +1,175 @@
+schema: '2.0'
+stages:
+  ingest:
+    cmd: python mlops_xoxo/age_gender/data_ingest.py
+    deps:
+    - path: data/raw/age_gender/UTKFace
+      hash: md5
+      md5: 69f82d6acb3b8cdbbc77d5d67523b077.dir
+      size: 119986277
+      nfiles: 23708
+    - path: mlops_xoxo/age_gender/data_ingest.py
+      hash: md5
+      md5: 55dcbc259b0ea93b10844fbb2b70c4f8
+      size: 1775
+    outs:
+    - path: data/processed/age_gender/utkface_metadata.csv
+      hash: md5
+      md5: 8e93e284a241691538c9aa226ee60342
+      size: 1060691
+  split:
+    cmd: python mlops_xoxo/age_gender/data_split.py
+    deps:
+    - path: data/processed/age_gender/utkface_metadata.csv
+      hash: md5
+      md5: 8e93e284a241691538c9aa226ee60342
+      size: 1060691
+    - path: mlops_xoxo/age_gender/data_split.py
+      hash: md5
+      md5: 33ccfdd3a826463d7c736232d10ddc43
+      size: 1641
+    outs:
+    - path: data/processed/age_gender/splits
+      hash: md5
+      md5: e74275ddefa94e98d7941d9ba5ec05ed.dir
+      size: 1060741
+      nfiles: 3
+  validate:
+    cmd: python mlops_xoxo/age_gender/data_validate.py
+    deps:
+    - path: data/processed/age_gender/utkface_metadata.csv
+      hash: md5
+      md5: 8e93e284a241691538c9aa226ee60342
+      size: 1060691
+    - path: data/raw/age_gender/UTKFace
+      hash: md5
+      md5: 69f82d6acb3b8cdbbc77d5d67523b077.dir
+      size: 119986277
+      nfiles: 23708
+    - path: mlops_xoxo/age_gender/data_validate.py
+      hash: md5
+      md5: 54e3de04ab45f4248129b4af8f2a8342
+      size: 2075
+    outs:
+    - path: data/processed/age_gender/validation
+      hash: md5
+      md5: 53bd3f803f13c6213bc01190ae4d9cb1.dir
+      size: 104
+      nfiles: 1
+  train:
+    cmd: python mlops_xoxo/age_gender/train.py
+    deps:
+    - path: data/processed/age_gender/splits/train.csv
+      hash: md5
+      md5: 3cce1881c0e00fa2325d89076ea1e41d
+      size: 742440
+    - path: data/processed/age_gender/splits/val.csv
+      hash: md5
+      md5: 11d09e91b163f989617c95ffea9c080a
+      size: 159098
+    - path: mlops_xoxo/age_gender/config.py
+      hash: md5
+      md5: 6a3f0104489f503987d390a8669782ac
+      size: 615
+    - path: mlops_xoxo/age_gender/train.py
+      hash: md5
+      md5: 089e1e8ab12d753cf86b00c82fa924bf
+      size: 8710
+    params:
+      pipelines/age_gender/params.yaml:
+        mlflow:
+          experiment_id: '4'
+          experiment_name: age_gender_classification
+          run_id: a90bc793e451424fa50694dee3032877
+          run_name: age_gender_classification_1_epochs
+          tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
+          tags:
+            name: age_gender_classification
+            team: xoxo
+        training:
+          batch_size: 16
+          num_epochs: 1
+          learning_rate: 0.001
+          device: mps
+    outs:
+    - path: models/age_gender/age_model.pt
+      hash: md5
+      md5: ea3f332596080ca58bd885b67fcebdc1
+      size: 9146315
+    - path: models/age_gender/gender_model.pt
+      hash: md5
+      md5: 03896bb74c3c7504ecceba0fe1c1b6af
+      size: 9152395
+  test:
+    cmd: python mlops_xoxo/age_gender/test.py
+    deps:
+    - path: data/processed/age_gender/splits/test.csv
+      hash: md5
+      md5: 8e1c798be0041c2f3028e2a94f8a5b37
+      size: 159203
+    - path: mlops_xoxo/age_gender/config.py
+      hash: md5
+      md5: 6a3f0104489f503987d390a8669782ac
+      size: 615
+    - path: mlops_xoxo/age_gender/test.py
+      hash: md5
+      md5: 32521a5b3792d9e7fb63ccd8825cbd90
+      size: 7038
+    - path: models/age_gender/age_model.pt
+      hash: md5
+      md5: ea3f332596080ca58bd885b67fcebdc1
+      size: 9146315
+    - path: models/age_gender/gender_model.pt
+      hash: md5
+      md5: 03896bb74c3c7504ecceba0fe1c1b6af
+      size: 9152395
+    - path: pipelines/age_gender/params.yaml
+      hash: md5
+      md5: 2f4e0ffb43c8133784808d93c90b54a0
+      size: 739
+    outs:
+    - path: reports/age_gender/test_results
+      hash: md5
+      md5: d282700de357aa78939faf0cdc2fe416.dir
+      size: 496
+      nfiles: 1
+  eval:
+    cmd: python mlops_xoxo/age_gender/eval.py
+    deps:
+    - path: data/processed/age_gender/splits/val.csv
+      hash: md5
+      md5: 11d09e91b163f989617c95ffea9c080a
+      size: 159098
+    - path: mlops_xoxo/age_gender/config.py
+      hash: md5
+      md5: 6a3f0104489f503987d390a8669782ac
+      size: 615
+    - path: mlops_xoxo/age_gender/eval.py
+      hash: md5
+      md5: 42663d3baa8a7050d42d3bbe79f3d51f
+      size: 5679
+    - path: models/age_gender/age_model.pt
+      hash: md5
+      md5: ea3f332596080ca58bd885b67fcebdc1
+      size: 9146315
+    - path: models/age_gender/gender_model.pt
+      hash: md5
+      md5: 03896bb74c3c7504ecceba0fe1c1b6af
+      size: 9152395
+    params:
+      pipelines/age_gender/params.yaml:
+        mlflow:
+          experiment_id: '4'
+          experiment_name: age_gender_classification
+          run_id: a90bc793e451424fa50694dee3032877
+          run_name: age_gender_classification_1_epochs
+          tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
+          tags:
+            name: age_gender_classification
+            team: xoxo
+    outs:
+    - path: reports/age_gender/evaluation
+      hash: md5
+      md5: b1263a027a7df993db9c1a042a030640.dir
+      size: 188
+      nfiles: 1

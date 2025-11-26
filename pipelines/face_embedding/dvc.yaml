@@ -1,0 +1,54 @@
+stages:
+  ingest:
+    wdir: ../..
+    cmd: python mlops_xoxo/face_embedding/data_ingest.py
+    deps:
+      - mlops_xoxo/face_embedding/data_ingest.py
+      - data/external/face_embedding/casioface/train.rec
+      - data/external/face_embedding/casioface/train.idx
+      - data/external/face_embedding/casioface/train.lst
+    outs:
+      - data/raw/face_embedding
+
+  validate:
+    wdir: ../..
+    cmd: python mlops_xoxo/face_embedding/data_validate.py
+    deps:
+      - mlops_xoxo/face_embedding/data_validate.py
+      - data/raw/face_embedding
+    outs:
+      - docs/face_embedding
+
+  split:
+    wdir: ../..
+    cmd: python mlops_xoxo/face_embedding/data_split.py
+    deps:
+      - mlops_xoxo/face_embedding/data_split.py
+      - data/raw/face_embedding
+    outs:
+      - data/processed/face_embedding
+
+  train:
+    wdir: ../..
+    cmd: python mlops_xoxo/face_embedding/train.py > mlflow_run_id.txt
+    deps:
+      - mlops_xoxo/face_embedding/train.py
+      - data/processed/face_embedding/train
+    params:
+      - pipelines/face_embedding/params.yaml:
+          - training
+    outs:
+      - models/face_embedding
+      - reports/face_embedding/emissions.csv
+
+  eval:
+    wdir: ../..
+    cmd: python mlops_xoxo/face_embedding/eval.py
+    deps:
+      - mlops_xoxo/face_embedding/eval.py
+      - models/face_embedding
+      - data/processed/face_embedding/val
+      - pipelines/face_embedding/params.yaml
+    outs:
+      - reports/face_embedding/eval_predictions.json
+      - reports/face_embedding/eval_summary.txt

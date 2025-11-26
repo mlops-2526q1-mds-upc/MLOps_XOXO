@@ -1,0 +1,31 @@
+dataset:
+  external_dir: data/external/age_gender
+  processed_dir: data/processed/age_gender
+  raw_dir: data/raw/age_gender/UTKFace
+  split:
+    test: 0.15
+    train: 0.7
+    val: 0.15
+mlflow:
+  experiment_id: "4"
+  experiment_name: age_gender_classification
+  run_id: a90bc793e451424fa50694dee3032877
+  run_name: age_gender_classification_1_epochs
+  tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
+  tags:
+    name: age_gender_classification
+    team: xoxo
+preprocessing:
+  image_size: 160
+  min_face_size: 40
+seed: 42
+storage:
+  dvc_remote: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.dvc
+training:
+  batch_size: 16
+  num_epochs: 1
+  learning_rate: 0.001
+  device: mps
+model:
+  dropout: 0.5
+  backbone: mobilenet_v2
