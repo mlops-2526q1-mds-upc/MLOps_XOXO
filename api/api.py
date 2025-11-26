@@ -1,7 +1,7 @@
 # Run 'python api/api.py'
 # Access the API UI (Swagger UI) at http://127.0.0.1:8000 or http://127.0.0.1:8000/docs
 
-import io
+import io, os
 import sys
 from pathlib import Path
 import torch
@@ -37,6 +37,14 @@ else:
 print(f"API using device: {DEVICE}")
 
 # Load face embedding model
+# repo root
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# correct directory name (underscore)
+FACE_EMB = os.path.join(ROOT, "mlops_xoxo", "face_embedding")
+
+sys.path.append(ROOT)
+sys.path.append(FACE_EMB)
 from mlops_xoxo.face_embedding.train import MobileFace
 
 EMBEDDING_MODEL_PATH = project_root / "models/face_embedding/mobilenetv2_arcface_model.pth" 

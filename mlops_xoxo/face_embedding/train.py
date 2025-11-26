@@ -22,7 +22,7 @@ import mlflow
 import mlflow.pytorch
 from dotenv import load_dotenv
 
-from .train_util import (
+from train_util import (
     start_emissions_tracker,
     log_metrics_mlflow,
     log_params_mlflow,
