@@ -3,7 +3,7 @@ import base64
 from pathlib import Path
 from unittest.mock import patch
 
-from mlops_xoxo.utils.data_utils import rec_to_images
+from mlops_xoxo.face_embedding.utils.data_utils import rec_to_images
 
 REAL_REC_PATH = Path("data/external/casioface/train.rec")
 REAL_IDX_PATH = Path("data/external/casioface/train.idx")
@@ -92,7 +92,7 @@ def fake_rec_files(tmp_path):
         
     return rec_path, idx_path, lst_path
 
-@patch('mlops_xoxo.utils.data_utils.cv2.imdecode', return_value=None)
+@patch('mlops_xoxo.face_embedding.utils.data_utils.cv2.imdecode', return_value=None)
 def test_rec_to_images_handles_corrupt_jpeg(mock_imdecode, fake_rec_files, tmp_path):
     """
     Tests that the function correctly skips records where cv2 cannot decode the image

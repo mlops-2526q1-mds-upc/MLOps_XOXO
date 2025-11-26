@@ -152,8 +152,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .
-        pip install dvc dvc-http
-        pip install fastapi uvicorn httpx pytest requests pillow
+        pip install dvc dvc-http fastapi uvicorn httpx pillow pytest
 
     - name: Configure DVC remote
       env:
@@ -164,7 +163,7 @@ jobs:
         dvc remote modify origin user "$DAGSHUB_DVC_USER"
         dvc remote modify origin password "$DAGSHUB_DVC_PASS"
 
-    - name: Download required models for API
+    - name: Download models for API
       run: |
         echo "📥 Downloading models for API..."
         dvc pull models/face_embedding/mobilenetv2_arcface_model.pth
@@ -172,242 +171,57 @@ jobs:
         dvc pull models/age_gender/gender_model.pt
         dvc pull models/emotion_classification/best_model.pth
         dvc pull models/fake_classification/model_best.pth
-        echo "✅ API models downloaded"
+        echo "✅ All models downloaded for API"
 
-    - name: Verify model files exist
+    - name: Start API server and test
       run: |
-        echo "🔍 Verifying model files for API..."
-        models=(
-          "models/face_embedding/mobilenetv2_arcface_model.pth"
-          "models/age_gender/age_model.pt"
-          "models/age_gender/gender_model.pt"
-          "models/emotion_classification/best_model.pth"
-          "models/fake_classification/model_best.pth"
-        )
-        for model in "${models[@]}"; do
-          if [ -f "$model" ]; then
-            size=$(du -h "$model" | cut -f1)
-            echo "✅ $model - $size"
-          else
-            echo "❌ $model - MISSING"
-            exit 1
-          fi
-        done
-
-    - name: Test API imports and model loading
-      run: |
-        echo "🧪 Testing API imports and model loading..."
-        python -c "
-        import sys
-        from pathlib import Path
+        echo "🚀 Starting API server and running tests..."
         
-        # Test basic imports
-        try:
-            import torch
-            import fastapi
-            import uvicorn
-            from PIL import Image
-            print('✅ All core dependencies imported successfully')
-        except ImportError as e:
-            print(f'❌ Import error: {e}')
-            sys.exit(1)
-            
-        # Test API module import
-        try:
-            sys.path.insert(0, str(Path('.').resolve()))
-            from mlops_xoxo.api.api import app, DEVICE, embedding_model, age_model, gender_model, emotion_model, auth_model
-            print('✅ API module imported successfully')
-            print(f'✅ Device: {DEVICE}')
-            
-            # Check model loading status
-            models_status = {
-                'face_embedding': embedding_model is not None,
-                'age_model': age_model is not None,
-                'gender_model': gender_model is not None,
-                'emotion_model': emotion_model is not None,
-                'authenticity_model': auth_model is not None
-            }
-            
-            for model_name, loaded in models_status.items():
-                status = '✅' if loaded else '❌'
-                print(f'{status} {model_name}: {"Loaded" if loaded else "Not loaded"}')
-                
-            # Count loaded models
-            loaded_count = sum(models_status.values())
-            total_count = len(models_status)
-            print(f'📊 Models loaded: {loaded_count}/{total_count}')
-            
-            if loaded_count < total_count:
-                print('⚠️  Some models failed to load (this might be expected)')
-                
-        except Exception as e:
-            print(f'❌ API module import failed: {e}')
-            sys.exit(1)
-        "
-
-    - name: Start API server in background
-      run: |
-        echo "🚀 Starting API server in background..."
-        cd api && nohup python -m uvicorn api:app --host 0.0.0.0 --port 8000 > api.log 2>&1 &
-        echo $! > api.pid
-        sleep 10  # Wait for server to start
-
-    - name: Test API endpoints
-      run: |
-        echo "🧪 Testing API endpoints..."
-        python -c "
-        import requests
-        import time
-        import json
+        # Start API server in background
+        cd api && python -m uvicorn api:app --host 0.0.0.0 --port 8000 &
+        SERVER_PID=$!
         
-        base_url = 'http://localhost:8000'
-        max_retries = 5
-        retry_delay = 3
+        # Wait for server to start
+        sleep 15
         
-        # Wait for API to be ready
-        for i in range(max_retries):
-            try:
-                response = requests.get(f'{base_url}/health', timeout=5)
-                if response.status_code == 200:
-                    print('✅ API is running and responsive')
-                    break
-            except requests.exceptions.RequestException as e:
-                if i == max_retries - 1:
-                    print(f'❌ API failed to start: {e}')
-                    # Show API logs for debugging
-                    import subprocess
-                    try:
-                        logs = subprocess.check_output(['cat', 'api/api.log'], text=True)
-                        print('API logs:')
-                        print(logs)
-                    except:
-                        print('Could not read API logs')
-                    exit(1)
-                print(f'⚠️  API not ready yet, retrying in {retry_delay}s... ({i+1}/{max_retries})')
-                time.sleep(retry_delay)
-        
-        # Test /info endpoint
-        try:
-            response = requests.get(f'{base_url}/info', timeout=10)
-            if response.status_code == 200:
-                info = response.json()
-                print('✅ /info endpoint working')
-                print(f'📊 Service: {info.get(\"service_name\", \"Unknown\")}')
-                print(f'🔧 Device: {info.get(\"device\", \"Unknown\")}')
-                
-                # Check models status from API
-                models_info = info.get('models', {})
-                for model_name, model_info in models_info.items():
-                    status = model_info.get('status', 'unknown')
-                    symbol = '✅' if status == 'loaded' else '❌' if status == 'not_loaded' else '⚠️'
-                    print(f'{symbol} {model_name}: {status}')
-                    
-            else:
-                print(f'❌ /info endpoint returned status {response.status_code}')
-                exit(1)
-        except Exception as e:
-            print(f'❌ /info endpoint test failed: {e}')
-            exit(1)
-        
-        # Test /health endpoint
-        try:
-            response = requests.get(f'{base_url}/health', timeout=5)
-            if response.status_code == 200:
-                print('✅ /health endpoint working')
-            else:
-                print(f'❌ /health endpoint returned status {response.status_code}')
-                exit(1)
-        except Exception as e:
-            print(f'❌ /health endpoint test failed: {e}')
-            exit(1)
-            
-        # Test root endpoint
-        try:
-            response = requests.get(f'{base_url}/', timeout=5)
-            if response.status_code == 200:
-                print('✅ Root endpoint working')
-            else:
-                print(f'❌ Root endpoint returned status {response.status_code}')
-        except Exception as e:
-            print(f'❌ Root endpoint test failed: {e}')
-            
-        print('🎉 All API endpoint tests passed!')
-        "
-
-    - name: Create test image for prediction endpoints
-      run: |
-        echo "🖼️ Creating test image for prediction endpoints..."
+        # Create test image
         python -c "
         from PIL import Image
         import numpy as np
-        
-        # Create a simple test image (red square)
         img_array = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
-        test_img = Image.fromarray(img_array)
-        test_img.save('test_image.jpg')
-        print('✅ Test image created: test_image.jpg')
+        Image.fromarray(img_array).save('test_api_image.jpg')
         "
-
-    - name: Test prediction endpoints with test image
-      run: |
-        echo "🧪 Testing prediction endpoints..."
+        
+        # Run tests
         python -c "
         import requests
         import time
         
         base_url = 'http://localhost:8000'
         
-        # Test prediction endpoints with the test image
-        endpoints_to_test = [
-            '/predict_embedding',
-            '/predict_age_gender', 
-            '/predict_emotion',
-            '/predict_authenticity'
-        ]
+        # Test basic endpoints
+        for endpoint in ['/', '/health', '/info']:
+            response = requests.get(f'{base_url}{endpoint}')
+            assert response.status_code == 200, f'Failed: {endpoint}'
+            print(f'✅ GET {endpoint}')
         
-        for endpoint in endpoints_to_test:
-            try:
-                with open('test_image.jpg', 'rb') as f:
-                    files = {'file': ('test_image.jpg', f, 'image/jpeg')}
-                    response = requests.post(f'{base_url}{endpoint}', files=files, timeout=30)
-                
-                if response.status_code == 200:
-                    print(f'✅ {endpoint} - SUCCESS')
-                    result = response.json()
-                    # Show some key results
-                    if 'embedding' in result:
-                        emb_len = len(result['embedding'])
-                        print(f'   📏 Embedding length: {emb_len}')
-                    if 'predicted_age' in result:
-                        print(f'   👶 Age: {result[\"predicted_age\"]}')
-                    if 'gender_label' in result:
-                        print(f'   👫 Gender: {result[\"gender_label\"]}')
-                    if 'emotion' in result:
-                        print(f'   😊 Emotion: {result[\"emotion\"]}')
-                    if 'prediction' in result:
-                        print(f'   🔍 Authenticity: {result[\"prediction\"]}')
-                        
-                elif response.status_code == 503:
-                    print(f'⚠️  {endpoint} - Model not loaded (may be expected)')
-                else:
-                    print(f'❌ {endpoint} - Failed with status {response.status_code}: {response.text}')
-                    
-            except requests.exceptions.Timeout:
-                print(f'❌ {endpoint} - Request timeout')
-            except Exception as e:
-                print(f'❌ {endpoint} - Error: {e}')
+        # Test prediction endpoints
+        with open('test_api_image.jpg', 'rb') as f:
+            files = {'file': f}
+            endpoints = [
+                '/predict_embedding',
+                '/predict_age_gender',
+                '/predict_emotion', 
+                '/predict_authenticity'
+            ]
+            
+            for endpoint in endpoints:
+                response = requests.post(f'{base_url}{endpoint}', files=files)
+                assert response.status_code == 200, f'Failed: {endpoint}'
+                print(f'✅ POST {endpoint}')
         
-        print('🎉 Prediction endpoint tests completed!')
+        print('🎉 All API tests passed!')
         "
-
-    - name: Stop API server
-      if: always()
-      run: |
-        echo "🛑 Stopping API server..."
-        if [ -f "api/api.pid" ]; then
-          kill $(cat api/api.pid) 2>/dev/null || true
-          rm -f api/api.pid
-        fi
-        # Also kill any uvicorn processes
-        pkill -f uvicorn || true
-        echo "✅ API server stopped"
+        
+        # Stop server
+        kill $SERVER_PID
