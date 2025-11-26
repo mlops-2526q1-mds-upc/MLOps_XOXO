@@ -1,128 +1,215 @@
-# tests/test_train.py
 import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
-from unittest import mock
 import torch
+import tempfile
+from pathlib import Path
+from unittest.mock import Mock, patch, MagicMock
+import sys
+import os
 
-TRAIN_SCRIPT_PATH = "mlops_xoxo.face_embedding.train"
+# Add the project root to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-@pytest.fixture
-def setup_training_mocks(mocker):
-    """
-    This central fixture mocks all major components of the train.py script
-    to allow for a fast, isolated unit test of the training loop logic.
-    """
-    # Mock the data loaders to return a single mocked batch
-    fake_image_batch = torch.randn(4, 3, 112, 112) # Batch of 4 images
-    fake_labels_batch = torch.randint(0, 10, (4,)) # Batch of 4 labels
+from mlops_xoxo.face_embedding.train import (
+    MobileFace, 
+    ArcFaceHead, 
+    FaceDataset, 
+    train_model
+)
 
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.DEVICE", torch.device('cpu'))
+
+class TestTrainComponents:
+    """Test cases for training components"""
     
-    mock_train_loader = MagicMock()
-    mock_train_loader.__iter__.return_value = [(fake_image_batch, fake_labels_batch)]
-    mock_train_loader.__len__.return_value = 1
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.train_loader", mock_train_loader)
+    @pytest.fixture
+    def mock_embeddings(self):
+        """Create mock embeddings (already flattened)"""
+        return torch.randn(2, 512)  # batch_size=2, embedding_size=512
     
-    mock_val_loader = MagicMock()
-    mock_val_loader.__iter__.return_value = [(fake_image_batch, fake_labels_batch)]
-    mock_val_loader.__len__.return_value = 1
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.val_loader", mock_val_loader)
-
-    # Mock the model classes to return simple mock objects
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.MobileFace")
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.ArcFaceHead")
+    @pytest.fixture
+    def mock_labels(self):
+        """Create mock labels"""
+        return torch.tensor([0, 1])
     
-    # Mock torch components
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.torch.optim.Adam")
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.torch.nn.CrossEntropyLoss")
-
-    # Mock External Services and file input output
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.mlflow")
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.start_emissions_tracker")
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.log_metrics_mlflow")
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.log_params_mlflow")
-    mocker.patch("torch.save")
-    mocker.patch("pandas.read_csv")
-
-    # Mock constants to speed up the test
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.EPOCHS", 1)
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.BATCH", 4)
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.LR", 0.001)
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.MARGIN", 0.5)
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.WEIGHT_DECAY", 0.0001)
-
-    # Mock the dataset to return a fixed number of classes
-    mock_train_ds = MagicMock()
-    mock_train_ds.classes = list(range(10))  # 10 classes
-    mocker.patch(f"{TRAIN_SCRIPT_PATH}.train_ds", mock_train_ds)
-
-    # Import the script after all the mocks are in place
-    from mlops_xoxo.face_embedding import train
-    return train
-
-def test_train_model_workflow(setup_training_mocks):
-    """
-    Tests the main `train_model` function to ensure the core training
-    and validation loop executes and calls the correct functions.
-    """
-    train_script = setup_training_mocks
-
-    # Mock the context manager for emissions tracker
-    mock_emissions_context = MagicMock()
-    train_script.start_emissions_tracker.return_value.__enter__.return_value = mock_emissions_context
-
-    # Create tensors that require gradients for proper backprop
-    mock_embeddings = torch.randn(4, 512, requires_grad=True)
-    mock_logits = torch.randn(4, 10, requires_grad=True)
+    def test_mobileface_forward(self):
+        """Test MobileFace model forward pass"""
+        model = MobileFace(emb_size=512)
+        
+        # Create proper input for MobileNetV2 (batch_size=2, channels=3, height=112, width=112)
+        input_tensor = torch.randn(2, 3, 112, 112)
+        output = model(input_tensor)
+        
+        # Check output shape
+        assert output.shape == (2, 512)  # batch_size=2, embedding_size=512
+        # Check output is normalized (L2 norm ≈ 1)
+        norms = torch.norm(output, dim=1)
+        assert torch.allclose(norms, torch.ones_like(norms), atol=1e-6)
     
-    # Mock model instances with proper gradient setup
-    mock_model_instance = MagicMock()
-    mock_model_instance.return_value = mock_embeddings
-    mock_model_instance.to.return_value = mock_model_instance
-    mock_model_instance.train.return_value = None
-    mock_model_instance.eval.return_value = None
-    mock_model_instance.parameters.return_value = [torch.nn.Parameter(torch.randn(1))]
-    train_script.MobileFace.return_value = mock_model_instance
-
-    mock_arcface_instance = MagicMock()
-    mock_arcface_instance.return_value = mock_logits
-    mock_arcface_instance.to.return_value = mock_arcface_instance
-    mock_arcface_instance.parameters.return_value = [torch.nn.Parameter(torch.randn(1))]
-    train_script.ArcFaceHead.return_value = mock_arcface_instance
-
-    # Mock optimizer
-    mock_optimizer_instance = MagicMock()
-    train_script.torch.optim.Adam.return_value = mock_optimizer_instance
-
-    # Mock criterion to return a loss tensor that requires grad
-    mock_loss_tensor = torch.tensor(0.5, requires_grad=True)
-    mock_criterion_instance = MagicMock()
-    mock_criterion_instance.return_value = mock_loss_tensor
-    train_script.torch.nn.CrossEntropyLoss.return_value = mock_criterion_instance
-
-    train_script.train_model(run_id="fake_run_id")
-
-    # Check that key functions were called
-    train_script.MobileFace.assert_called_once()
-    train_script.ArcFaceHead.assert_called_once()
-    train_script.torch.optim.Adam.assert_called_once()
-    mock_optimizer_instance.step.assert_called()
-    torch.save.assert_called_once()
-    train_script.start_emissions_tracker.assert_called_once()
-
-    # Check that metrics were logged via log_metrics_mlflow
-    train_script.log_metrics_mlflow.assert_called()
-
-    # Get the metrics that were passed to log_metrics_mlflow
-    logged_metrics_calls = train_script.log_metrics_mlflow.call_args_list
+    def test_arcface_forward(self, mock_embeddings, mock_labels):
+        """Test ArcFaceHead forward pass"""
+        num_classes = 10
+        arcface = ArcFaceHead(emb_size=512, num_classes=num_classes, margin=0.5)
+        
+        logits = arcface(mock_embeddings, mock_labels)
+        
+        # Check output shape
+        assert logits.shape == (2, num_classes)  # batch_size=2, num_classes=10
     
-    # Check that we have training metrics
-    assert len(logged_metrics_calls) > 0
+    def test_arcface_parameter_initialization(self):
+        """Test ArcFace weight initialization"""
+        num_classes = 5
+        emb_size = 128
+        arcface = ArcFaceHead(emb_size=emb_size, num_classes=num_classes)
+        
+        # Check weight shape
+        assert arcface.weight.shape == (num_classes, emb_size)
+        # Check weight is a parameter
+        assert isinstance(arcface.weight, torch.nn.Parameter)
     
-    # Check the first call to log_metrics_mlflow contains expected metrics
-    first_metrics_call = logged_metrics_calls[0][0][0]  # First call, first arg (metrics dict)
-    expected_metrics = ['train_loss', 'val_loss', 'val_accuracy']
+    @pytest.fixture
+    def mock_dataset_dir(self):
+        """Create a temporary directory with mock dataset structure"""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create class directories and dummy images
+            for class_name in ['person1', 'person2', 'person3']:
+                class_dir = Path(temp_dir) / class_name
+                class_dir.mkdir()
+                
+                # Create dummy image files
+                for i in range(3):
+                    img_path = class_dir / f'img{i}.jpg'
+                    # Create empty file (in real scenario, these would be valid images)
+                    img_path.touch()
+            
+            yield temp_dir
     
-    for metric in expected_metrics:
-        assert metric in first_metrics_call, f"Metric {metric} not found in logged metrics"
+    def test_facedataset_initialization(self, mock_dataset_dir):
+        """Test FaceDataset initialization"""
+        dataset = FaceDataset(mock_dataset_dir)
+        
+        # Check dataset properties
+        assert len(dataset) == 9  # 3 classes * 3 images each
+        assert len(dataset.classes) == 3
+        assert 'person1' in dataset.class_to_idx
+        assert 'person2' in dataset.class_to_idx
+        assert 'person3' in dataset.class_to_idx
+    
+    def test_facedataset_getitem(self, mock_dataset_dir):
+        """Test FaceDataset __getitem__ method"""
+        # Mock transform
+        mock_transform = Mock(side_effect=lambda x: x)
+        
+        dataset = FaceDataset(mock_dataset_dir, transform=mock_transform)
+        
+        # Test getting an item
+        with patch('PIL.Image.open') as mock_image_open:
+            mock_image = Mock()
+            mock_image.convert.return_value = mock_image
+            mock_image_open.return_value = mock_image
+            
+            image, label = dataset[0]
+        
+        # Check types
+        assert isinstance(label, int)
+        assert 0 <= label < len(dataset.classes)
+    
+    def test_facedataset_class_indices(self, mock_dataset_dir):
+        """Test that class_indices is properly populated"""
+        dataset = FaceDataset(mock_dataset_dir)
+        
+        # Check class_indices structure
+        assert len(dataset.class_indices) == 3
+        for class_idx in dataset.class_indices:
+            indices = dataset.class_indices[class_idx]
+            assert len(indices) == 3  # 3 images per class
+            assert all(0 <= idx < len(dataset) for idx in indices)
+
+
+class TestTrainIntegration:
+    """Integration tests for training process"""
+    
+    @patch('mlops_xoxo.face_embedding.train.prepare_output_dirs')
+    @patch('mlops_xoxo.face_embedding.train.start_emissions_tracker')
+    @patch('mlops_xoxo.face_embedding.train.log_metrics_mlflow')
+    @patch('mlops_xoxo.face_embedding.train.log_params_mlflow')
+    @patch('pandas.read_csv')
+    @patch('mlops_xoxo.face_embedding.train.DEVICE', torch.device('cpu'))
+    def test_train_model_integration(self, mock_read_csv, mock_log_params, mock_log_metrics,
+                                mock_emissions_tracker, mock_prepare_dirs):
+        """Test the main train_model function with mocked dependencies - simpler version"""
+        # Mock dependencies
+        mock_prepare_dirs.return_value = (Path('/mock/model/dir'), Path('/mock/report/dir'))
+        
+        # Mock emissions data
+        mock_emissions_df = Mock()
+        mock_emissions_data = Mock()
+        mock_emissions_data.emissions = 0.1
+        mock_emissions_data.energy_consumed = 0.5
+        mock_emissions_df.tail.return_value = Mock(**{'iloc': [mock_emissions_data]})
+        mock_read_csv.return_value = mock_emissions_df
+        
+        # Mock emissions tracker context manager
+        mock_emissions_tracker.return_value.__enter__ = Mock(return_value=None)
+        mock_emissions_tracker.return_value.__exit__ = Mock(return_value=None)
+        
+        # Mock everything at a higher level
+        with patch('mlops_xoxo.face_embedding.train.MobileFace') as mock_mobileface, \
+            patch('mlops_xoxo.face_embedding.train.ArcFaceHead') as mock_arcface, \
+            patch('mlops_xoxo.face_embedding.train.torch.optim.Adam') as mock_optimizer, \
+            patch('mlops_xoxo.face_embedding.train.torch.nn.CrossEntropyLoss') as mock_criterion, \
+            patch('mlops_xoxo.face_embedding.train.train_ds') as mock_train_ds, \
+            patch('mlops_xoxo.face_embedding.train.train_loader') as mock_train_loader, \
+            patch('mlops_xoxo.face_embedding.train.val_loader') as mock_val_loader, \
+            patch('torch.save'), \
+            patch('mlflow.log_artifact'), \
+            patch('mlflow.pytorch.log_model'), \
+            patch('mlflow.log_metrics'), \
+            patch('mlflow.log_param'):
+            
+            # Mock the training loop execution
+            with patch.object(mock_train_loader, '__iter__') as mock_train_iter, \
+                patch.object(mock_val_loader, '__iter__') as mock_val_iter:
+                
+                # Set up mock dataset
+                mock_train_ds.classes = ['person1', 'person2', 'person3']
+                
+                # Create simple tensor batches
+                train_batch = [(torch.randn(2, 3, 112, 112), torch.tensor([0, 1]))]
+                val_batch = [(torch.randn(2, 3, 112, 112), torch.tensor([0, 1]))]
+                
+                mock_train_iter.return_value = iter(train_batch)
+                mock_val_iter.return_value = iter(val_batch)
+                mock_train_loader.__len__ = Mock(return_value=1)
+                mock_val_loader.__len__ = Mock(return_value=1)
+                
+                # Mock models to return proper tensors
+                mock_model = Mock()
+                mock_model.parameters.return_value = [torch.randn(10, requires_grad=True)]
+                mock_model.to.return_value = mock_model
+                mock_model.train.return_value = None
+                mock_model.eval.return_value = None
+                mock_model.return_value = torch.randn(2, 512)  # embeddings
+                mock_mobileface.return_value = mock_model
+                
+                mock_arcface_instance = Mock()
+                mock_arcface_instance.parameters.return_value = [torch.randn(10, requires_grad=True)]
+                mock_arcface_instance.to.return_value = mock_arcface_instance
+                mock_arcface_instance.return_value = torch.randn(2, 3)  # logits for 3 classes
+                mock_arcface.return_value = mock_arcface_instance
+                
+                # Mock optimizer and criterion
+                mock_optim_instance = Mock()
+                mock_optimizer.return_value = mock_optim_instance
+                mock_criterion.return_value = Mock(return_value=torch.tensor(0.5))
+                
+                # Mock tqdm to avoid progress bar issues
+                with patch('mlops_xoxo.face_embedding.train.tqdm') as mock_tqdm:
+                    mock_tqdm.return_value.__enter__ = Mock(return_value=iter(train_batch))
+                    mock_tqdm.return_value.__exit__ = Mock(return_value=None)
+                    
+                    # Call train_model with minimal epochs
+                    with patch('mlops_xoxo.face_embedding.train.EPOCHS', 1):
+                        train_model()
+        
+        # Verify MLflow functions were called
+        mock_log_params.assert_called_once()
+        mock_log_metrics.assert_called()

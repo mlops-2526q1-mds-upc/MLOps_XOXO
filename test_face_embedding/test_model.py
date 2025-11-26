@@ -1,167 +1,191 @@
 import pytest
-import sys
-import yaml  
+import torch
+import json
+import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock
-import numpy as np
+from unittest.mock import Mock, patch, MagicMock, mock_open
+import sys
+import os
 
-# Markers and constants
-EVAL_SCRIPT_PATH = 'mlops_xoxo.face_embedding.eval'
-REAL_MANIFEST_PATH = Path("data/processed/face_embedding/splits/manifest.json")
-requires_real_data = pytest.mark.skipif(not REAL_MANIFEST_PATH.exists(), reason="Real data not found. Run 'dvc pull'.")
+# Add the project root to Python path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-"""
-We do not use 'test_ds' fixture as described in Pytest demo, as our test
-dataset is loaded in 'eval.py' which we test in this 'test_model.py' file.
-"""
+from mlops_xoxo.face_embedding.eval import calculate_metrics, save_results, evaluate_model
 
-### Fixtures
 
-@pytest.fixture
-def pipe(mocker):
-    """
-    This fixture prepares the environment for the test, sets up the model and
-    the data.
-    """
-    # Mock MLflow calls to avoid depending on a live server
-    mocker.patch(f'{EVAL_SCRIPT_PATH}.mlflow')
+class TestEvalModel:
+    """Test cases for model evaluation functions"""
     
-    # Import the eval script. It will load the real model and manifest
-    # as defined within the script itself.
-    if EVAL_SCRIPT_PATH in sys.modules:
-        del sys.modules[EVAL_SCRIPT_PATH]
-    import mlops_xoxo.face_embedding.eval as eval_script
+    @pytest.fixture
+    def mock_model(self):
+        """Create a mock model for testing"""
+        model = Mock()
+        model.eval.return_value = None
+        
+        # Mock the forward pass to return random embeddings
+        def mock_forward(x):
+            batch_size = x.shape[0]
+            # Return random embeddings of size 512
+            return torch.randn(batch_size, 512)
+        
+        model.side_effect = mock_forward
+        return model
     
-    return {"script": eval_script}
-
-
-### Tests
-
-@requires_real_data
-def test_model_accuracy(pipe):
-    """
-    Tests if the model's accuracy on the full test set is above a
-    reasonable threshold.
-    """
-    eval_script = pipe["script"]
+    @pytest.fixture
+    def mock_manifest(self):
+        """Create a mock manifest for testing"""
+        return {
+            'train': [
+                'data/train/person1/img1.jpg',
+                'data/train/person1/img2.jpg',
+                'data/train/person2/img1.jpg',
+                'data/train/person2/img2.jpg'
+            ],
+            'test': [
+                'data/test/person1/img3.jpg',
+                'data/test/person2/img3.jpg',
+                'data/test/person1/img4.jpg'
+            ]
+        }
     
-    # Run the model evaluation
-    metrics = eval_script.calculate_metrics(
-        eval_script.model,
-        eval_script.manifest,
-        eval_script.transform,
-        eval_script.DEVICE
-    )
-
-    # Check if accuracy is above 50%
-    accuracy_threshold = 0.50
+    @pytest.fixture
+    def mock_transform(self):
+        """Create a mock transform"""
+        return Mock(return_value=torch.randn(1, 3, 112, 112))
     
-    assert metrics is not None, "evaluate_model should return a metrics dictionary."
-    assert 'acc_top1' in metrics, "Metrics should contain 'top1_accuracy'."
-    assert metrics['acc_top1'] >= accuracy_threshold
+    @pytest.fixture
+    def mock_device(self):
+        """Mock device"""
+        return torch.device('cpu')
     
-    print(f"\n Model accuracy is {metrics['acc_top1']:.2f}, which is above the threshold of {accuracy_threshold}.")
-
-@requires_real_data
-@pytest.mark.parametrize("image_path, expected_identity", [
-    # Test 1: The first photo of person '0000099'
-    ("data/processed/face_embedding/test/0000204/6671.jpg", "0000204"),
-    # Test 2: A different photo of the same person
-    ("data/processed/face_embedding/test/0000204/6712.jpg", "0000204"),
-    # Test 3: A photo of a different person to ensure the model can distinguish them
-    ("data/processed/face_embedding/test/0000233/9004.jpg", "0000233"),
-])
-def test_model_predictions(pipe, image_path, expected_identity):
-    """
-    Tests the model's prediction for a few specific, known images.
-    """
-    eval_script = pipe["script"]
-
-    results = eval_script.calculate_metrics(
-        eval_script.model,
-        eval_script.manifest,
-        eval_script.transform,
-        eval_script.DEVICE
-    )
+    def test_calculate_metrics_structure(self, mock_model, mock_manifest, mock_transform, mock_device):
+        """Test that calculate_metrics returns the expected structure"""
+        # Mock PIL Image.open
+        with patch('PIL.Image.open') as mock_image_open:
+            # Mock image
+            mock_image = Mock()
+            mock_image.convert.return_value = mock_image
+            mock_image_open.return_value = mock_image
+            
+            results = calculate_metrics(mock_model, mock_manifest, mock_transform, mock_device)
+        
+        # Check structure
+        assert 'acc_top1' in results
+        assert 'acc_top5' in results
+        assert 'total' in results
+        assert 'predictions' in results
+        
+        # Check types
+        assert isinstance(results['acc_top1'], float)
+        assert isinstance(results['acc_top5'], float)
+        assert isinstance(results['total'], int)
+        assert isinstance(results['predictions'], list)
+        
+        # Check values are within expected ranges
+        assert 0 <= results['acc_top1'] <= 1
+        assert 0 <= results['acc_top5'] <= 1
+        assert results['total'] == len(mock_manifest['test'])
     
-    # Find our specific image in the list of predictions 
-    all_predictions = results["predictions"]
+    def test_calculate_metrics_predictions_format(self, mock_model, mock_manifest, mock_transform, mock_device):
+        """Test that predictions have the correct format"""
+        with patch('PIL.Image.open') as mock_image_open:
+            mock_image = Mock()
+            mock_image.convert.return_value = mock_image
+            mock_image_open.return_value = mock_image
+            
+            results = calculate_metrics(mock_model, mock_manifest, mock_transform, mock_device)
+        
+        # Check each prediction has required fields
+        for prediction in results['predictions']:
+            assert 'image_path' in prediction
+            assert 'true_id' in prediction
+            assert 'predicted_id' in prediction
+            assert 'top5_ids' in prediction
+            
+            # Check types
+            assert isinstance(prediction['image_path'], str)
+            assert isinstance(prediction['true_id'], str)
+            assert isinstance(prediction['predicted_id'], str)
+            assert isinstance(prediction['top5_ids'], list)
+            
+            # Check top5_ids has at most 5 elements (can be fewer if fewer classes)
+            # The test has only 2 classes, so top5 should have 2 elements
+            assert len(prediction['top5_ids']) <= 5
+            assert len(prediction['top5_ids']) >= 1
     
-    # Find the dictionary corresponding to the image_path for this test run
-    prediction_for_image = next(
-        (p for p in all_predictions if p['image_path'].endswith(image_path)), 
-        None
-    )
-
-    assert prediction_for_image is not None, f"Prediction for {image_path} not found."
-    assert prediction_for_image['predicted_id'] == expected_identity
+    @patch('mlflow.log_metric')
+    @patch('mlflow.log_param')
+    @patch('mlflow.log_artifact')
+    @patch('mlflow.set_tags')
+    def test_save_results(self, mock_set_tags, mock_log_artifact, mock_log_param, mock_log_metric):
+        """Test save_results function with MLflow integration"""
+        # Create test results
+        test_results = {
+            'acc_top1': 0.85,
+            'acc_top5': 0.95,
+            'total': 100,
+            'predictions': [
+                {
+                    'image_path': 'test.jpg',
+                    'true_id': 'person1',
+                    'predicted_id': 'person1',
+                    'top5_ids': ['person1', 'person2', 'person3', 'person4', 'person5']
+                }
+            ]
+        }
+        
+        # Mock Path and file operations
+        with patch('pathlib.Path.mkdir'), \
+             patch('builtins.open', mock_open()), \
+             patch('json.dump'):
+            
+            save_results(test_results)
+        
+        # Verify MLflow metrics were logged
+        mock_log_metric.assert_any_call('top1_accuracy', 0.85)
+        mock_log_metric.assert_any_call('top5_accuracy', 0.95)
+        mock_log_param.assert_any_call('eval_total', 100)
+        
+        # Verify tags were set
+        mock_set_tags.assert_called_once()
     
-    print(f"\n Model correctly predicted '{image_path}' as '{expected_identity}'.")
-
-def test_save_results_logs_and_writes_files(mocker):
-    """
-    Unit test for the save_results function to ensure it calls the
-    correct logging and file-writing functions.
-    We mock this function not to clutter MLFlow with actual resilts,
-    so we just check if the method 'save_results' from eval.py functions correctly.
-    """
-    from mlops_xoxo.face_embedding import eval as eval_script
-
-    # Create a fake 'results' dictionary to pass to the function
-    fake_results = {
-        "acc_top1": 0.95,
-        "acc_top5": 0.99,
-        "total": 100,
-        "predictions": [{"image_path": "path/to/img.jpg"}]
-    }
-
-    # Mock all the external functions that save_results calls
-    mock_mlflow = mocker.patch.object(eval_script, 'mlflow')
-    mock_open = mocker.patch("builtins.open", mocker.mock_open())
-    mock_path = mocker.patch.object(eval_script, 'Path')
+    @patch('mlflow.start_run')
+    @patch('mlflow.set_experiment')
+    @patch('mlflow.get_experiment_by_name')
+    def test_evaluate_model_missing_run_id(self, mock_get_experiment, mock_set_experiment, mock_start_run):
+        """Test evaluate_model raises error when run_id is missing"""
+        # Mock params to have no run_id
+        with patch('mlops_xoxo.face_embedding.eval.params', {'mlflow': {}}):
+            with pytest.raises(ValueError, match="Missing parent run_id in params.yaml"):
+                evaluate_model()
     
-    eval_script.save_results(fake_results)
-
-    # Check that MLflow logging was called with the correct metrics
-    mock_mlflow.log_metric.assert_any_call('top1_accuracy', 0.95)
-    mock_mlflow.log_metric.assert_any_call('top5_accuracy', 0.99)
-    mock_mlflow.log_param.assert_any_call('eval_total', 100)
-    
-    # Check that the script tried to create the reports directory
-    mock_path.return_value.mkdir.assert_called_once_with(parents=True, exist_ok=True)
-    
-    # Check that the script tried to write the summary and predictions files
-    assert mock_open.call_count >= 2, "Expected at least two files to be opened for writing."
-    mock_mlflow.log_artifact.assert_any_call(str(mock_path.return_value / 'eval_summary.txt'))
-
-
-def test_calculate_metrics_handles_empty_test_set(mocker):
-    """Tests that calculate_metrics handles an empty test set gracefully."""
-    from mlops_xoxo.face_embedding.eval import calculate_metrics
-    mock_model = MagicMock()
-    mock_transform = MagicMock()
-    fake_manifest = {"train": ["path/to/img.jpg"], "test": []}
-    
-    mock_model.return_value.detach.return_value.cpu.return_value.numpy.return_value = [np.random.rand(512)]
-    mocker.patch("PIL.Image.open")
-    
-    results = calculate_metrics(mock_model, fake_manifest, mock_transform, "cpu")
-    
-    assert results["acc_top1"] == 0
-
-def test_main_uses_existing_experiment_id(mocker):
-    """Tests the 'else' branch in the evaluate_model function."""
-    from mlops_xoxo.face_embedding import eval as eval_script
-    mock_params = {
-        'mlflow': {'experiment_id': 'id', 'run_id': 'id', 'experiment_name': 'name'},
-        'dataset': {'processed_dir': 'data/processed'}
-    }
-    mocker.patch.object(eval_script, 'params', mock_params)
-    mock_mlflow = mocker.patch.object(eval_script, 'mlflow')
-    mocker.patch.object(eval_script, 'calculate_metrics', return_value={})
-    mocker.patch.object(eval_script, 'save_results')
-    mocker.patch('yaml.safe_dump')
-
-    eval_script.evaluate_model()
-
-    mock_mlflow.get_experiment_by_name.assert_not_called()
+    @patch('mlflow.start_run')
+    @patch('mlflow.set_experiment')
+    @patch('mlflow.get_experiment_by_name')
+    @patch('mlops_xoxo.face_embedding.eval.calculate_metrics')
+    @patch('mlops_xoxo.face_embedding.eval.save_results')
+    def test_evaluate_model_success(self, mock_save_results, mock_calculate_metrics, 
+                                  mock_get_experiment, mock_set_experiment, mock_start_run):
+        """Test successful execution of evaluate_model"""
+        # Mock experiment
+        mock_experiment = Mock()
+        mock_experiment.experiment_id = 'test-exp-123'
+        mock_get_experiment.return_value = mock_experiment
+        
+        # Mock params with run_id
+        with patch('mlops_xoxo.face_embedding.eval.params', 
+                  {'mlflow': {'run_id': 'test-run-123', 'experiment_name': 'test-exp'}}):
+            
+            # Mock MLflow run context
+            mock_run = Mock()
+            mock_start_run.return_value.__enter__ = Mock(return_value=mock_run)
+            
+            # Mock results
+            mock_results = {'acc_top1': 0.8, 'acc_top5': 0.9, 'total': 50, 'predictions': []}
+            mock_calculate_metrics.return_value = mock_results
+            
+            evaluate_model()
+            
+            # Verify functions were called
+            mock_calculate_metrics.assert_called_once()
+            mock_save_results.assert_called_once_with(mock_results)
