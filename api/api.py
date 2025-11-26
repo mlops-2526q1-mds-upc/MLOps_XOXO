@@ -278,13 +278,16 @@ async def predict_age_gender(file: UploadFile = File(..., description="Image fil
         age_out = age_model(tensor)
         gender_out = gender_model(tensor)
     
-    gender_idx = torch.argmax(gender_out, dim=0).item()
+    gender_idx = torch.argmax(gender_out.flatten()).item()
     gender_label = "Male" if gender_idx == 0 else "Female" 
+
+    gender_probs = torch.softmax(gender_out.flatten(), dim=0)
+    gender_confidence = gender_probs[gender_idx].item()
     
     return {
         "predicted_age": round(age_out.item(), 1),
         "gender_label": gender_label,
-        "gender_confidence": float(torch.softmax(gender_out, dim=0)[gender_idx])
+        "gender_confidence": round(gender_confidence, 4)
     }
 
 @app.post("/predict_emotion", summary="Predict Emotion")
@@ -326,6 +329,7 @@ async def predict_authenticity(file: UploadFile = File(...)):
         "confidence": probs[0][pred_idx].item(),
         "is_fake": predicted_class.lower() == "fake"
     }
+
 # Running the app
 if __name__ == "__main__":
     # Access at http://127.0.0.1:8000 or http://127.0.0.1:8000/docs
