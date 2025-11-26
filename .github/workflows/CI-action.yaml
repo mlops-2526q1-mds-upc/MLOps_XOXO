@@ -16,7 +16,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: '3.9'  # Keep 3.9 for DVC connection test only
 
     - name: Install DVC and dependencies
       run: |
@@ -30,12 +30,10 @@ jobs:
       run: |
         echo "Current DVC remotes:"
         dvc remote list
-        
         echo "Modifying existing remote..."
         dvc remote modify origin auth basic
         dvc remote modify origin user "$DAGSHUB_DVC_USER"
         dvc remote modify origin password "$DAGSHUB_DVC_PASS"
-        
         echo "Updated remote configuration:"
         dvc remote list
 
@@ -91,7 +89,7 @@ jobs:
   test-face-embedding:
     name: Run Face Embedding Tests
     runs-on: ubuntu-latest
-    needs: test-dvc-connection  # Only need DVC connection
+    needs: test-dvc-connection
     
     steps:
     - name: Checkout repository
@@ -100,7 +98,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: '3.13'  # Fixed: Changed to 3.13
 
     - name: Install project and test dependencies
       run: |
@@ -133,7 +131,7 @@ jobs:
     - name: Run face embedding tests
       run: |
         echo "🧪 Running face embedding tests..."
-        pytest test_face_embedding
+        pytest test_face_embedding/ -v --cov=mlops_xoxo.face_embedding
 
   dvc-repro-targeted:
     name: Run DVC Repro (Targeted)
@@ -147,7 +145,12 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Set up Python and DVC
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'  # Fixed: Changed to 3.13
+
+    - name: Install DVC and project dependencies
       run: |
         pip install dvc dvc-http
         pip install -e .
@@ -164,11 +167,8 @@ jobs:
     - name: Run DVC repro on specific pipelines
       run: |
         echo "🔄 Running DVC repro on specific pipelines..."
-        
-        # Run repro on specific pipeline files
         dvc repro pipelines/age_gender/dvc.yaml || echo "Age/gender pipeline repro failed"
         dvc repro pipelines/emotion_classification/dvc.yaml || echo "Emotion pipeline repro failed"
         dvc repro pipelines/face_embedding/dvc.yaml || echo "Face embedding pipeline repro failed"
         dvc repro pipelines/fake_classification/dvc.yaml || echo "Fake classification pipeline repro failed"
-        
         echo "✅ Targeted DVC repro completed"
