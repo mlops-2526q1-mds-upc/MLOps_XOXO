@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 import numpy as np
 
 # Markers and constants
-EVAL_SCRIPT_PATH = 'mlops_xoxo.eval'
-REAL_MANIFEST_PATH = Path("data/processed/splits/manifest.json")
+EVAL_SCRIPT_PATH = 'mlops_xoxo.face_embedding.eval'
+REAL_MANIFEST_PATH = Path("data/processed/face_embedding/splits/manifest.json")
 requires_real_data = pytest.mark.skipif(not REAL_MANIFEST_PATH.exists(), reason="Real data not found. Run 'dvc pull'.")
 
 """
@@ -30,7 +30,7 @@ def pipe(mocker):
     # as defined within the script itself.
     if EVAL_SCRIPT_PATH in sys.modules:
         del sys.modules[EVAL_SCRIPT_PATH]
-    import mlops_xoxo.eval as eval_script
+    import mlops_xoxo.face_embedding.eval as eval_script
     
     return {"script": eval_script}
 
@@ -65,11 +65,11 @@ def test_model_accuracy(pipe):
 @requires_real_data
 @pytest.mark.parametrize("image_path, expected_identity", [
     # Test 1: The first photo of person '0000099'
-    ("data/processed/test/0000204/6671.jpg", "0000204"),
+    ("data/processed/face_embedding/test/0000204/6671.jpg", "0000204"),
     # Test 2: A different photo of the same person
-    ("data/processed/test/0000204/6712.jpg", "0000204"),
+    ("data/processed/face_embedding/test/0000204/6712.jpg", "0000204"),
     # Test 3: A photo of a different person to ensure the model can distinguish them
-    ("data/processed/test/0000233/9004.jpg", "0000233"),
+    ("data/processed/face_embedding/test/0000233/9004.jpg", "0000233"),
 ])
 def test_model_predictions(pipe, image_path, expected_identity):
     """
@@ -105,7 +105,7 @@ def test_save_results_logs_and_writes_files(mocker):
     We mock this function not to clutter MLFlow with actual resilts,
     so we just check if the method 'save_results' from eval.py functions correctly.
     """
-    from mlops_xoxo import eval as eval_script
+    from mlops_xoxo.face_embedding import eval as eval_script
 
     # Create a fake 'results' dictionary to pass to the function
     fake_results = {
@@ -137,7 +137,7 @@ def test_save_results_logs_and_writes_files(mocker):
 
 def test_calculate_metrics_handles_empty_test_set(mocker):
     """Tests that calculate_metrics handles an empty test set gracefully."""
-    from mlops_xoxo.eval import calculate_metrics
+    from mlops_xoxo.face_embedding.eval import calculate_metrics
     mock_model = MagicMock()
     mock_transform = MagicMock()
     fake_manifest = {"train": ["path/to/img.jpg"], "test": []}
@@ -151,7 +151,7 @@ def test_calculate_metrics_handles_empty_test_set(mocker):
 
 def test_main_uses_existing_experiment_id(mocker):
     """Tests the 'else' branch in the evaluate_model function."""
-    from mlops_xoxo import eval as eval_script
+    from mlops_xoxo.face_embedding import eval as eval_script
     mock_params = {
         'mlflow': {'experiment_id': 'id', 'run_id': 'id', 'experiment_name': 'name'},
         'dataset': {'processed_dir': 'data/processed'}

@@ -3,10 +3,10 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 import json
 
-from mlops_xoxo import data_validate
+from mlops_xoxo.face_embedding import data_validate
 
-REAL_RAW_DIR = Path("data/raw")
-REAL_MANIFEST_PATH = Path("data/processed/splits/manifest.json")
+REAL_RAW_DIR = Path("data/raw/face_embedding")
+REAL_MANIFEST_PATH = Path("data/processed/face_embedding/splits/manifest.json")
 
 # This marker skips the tests if the real data is not found
 requires_real_data = pytest.mark.skipif(
@@ -105,7 +105,7 @@ def test_check_person_folders_handles_empty_folder(tmp_path):
     
     assert "Warning: Person person_b_empty has no images" in summary
 
-@patch('mlops_xoxo.data_validate.cv2.imread')
+@patch('mlops_xoxo.face_embedding.data_validate.cv2.imread')
 def test_validate_images_finds_corrupted_image(mock_imread, tmp_path):
     """Unit test to ensure corrupted images (where imread returns None) are caught"""
     # Setup a fake directory with two files
@@ -155,12 +155,12 @@ def test_main_correctly_reports_corrupted_file(mocker, tmp_path):
     # Define the path for the output report
     report_path = tmp_path / "report.txt"
 
-    mocker.patch("mlops_xoxo.data_validate.RAW_DIR", str(raw_dir))
-    mocker.patch("mlops_xoxo.data_validate.MANIFEST_PATH", str(manifest_path))
-    mocker.patch("mlops_xoxo.data_validate.report_path", str(report_path))
+    mocker.patch("mlops_xoxo.face_embedding.data_validate.RAW_DIR", str(raw_dir))
+    mocker.patch("mlops_xoxo.face_embedding.data_validate.MANIFEST_PATH", str(manifest_path))
+    mocker.patch("mlops_xoxo.face_embedding.data_validate.report_path", str(report_path))
     
     # Import the script now that the paths are mocked
-    from mlops_xoxo import data_validate
+    from mlops_xoxo.face_embedding import data_validate
 
     # Run the data_validate_main function
     data_validate.data_validate_main()

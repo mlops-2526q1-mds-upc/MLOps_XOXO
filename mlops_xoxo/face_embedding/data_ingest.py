@@ -1,5 +1,4 @@
-from utils.data_utils import rec_to_images
-
+from .utils.data_utils import rec_to_images
 
 # Paths
 REC_PATH = "data/external/face_embedding/casioface/train.rec"

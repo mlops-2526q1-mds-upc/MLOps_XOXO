@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 from unittest import mock
 import torch
 
-TRAIN_SCRIPT_PATH = "mlops_xoxo.train"
+TRAIN_SCRIPT_PATH = "mlops_xoxo.face_embedding.train"
 
 @pytest.fixture
 def setup_training_mocks(mocker):
@@ -51,7 +51,7 @@ def setup_training_mocks(mocker):
     mocker.patch(f"{TRAIN_SCRIPT_PATH}.EPOCHS", 1) 
 
     # Import the script after all the mocks are in place
-    from mlops_xoxo import train
+    from mlops_xoxo.face_embedding import train
     return train
 
 def test_train_model_workflow(setup_training_mocks):

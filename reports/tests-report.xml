@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="3.801" timestamp="2025-11-26T15:55:17.263087+01:00" hostname="PUCHILAB"><testcase classname="" name="tests_face_embedding.test_data_utils" time="0.000"><error message="collection failure">ImportError while importing test module 'C:\Users\User\Desktop\MLOps_XOXO\tests_face_embedding\test_data_utils.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\AppData\Roaming\uv\python\cpython-3.13.7-windows-x86_64-none\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests_face_embedding\test_data_utils.py:6: in &lt;module&gt;
+    from mlops_xoxo.utils.data_utils import rec_to_images
+E   ModuleNotFoundError: No module named 'mlops_xoxo.utils'</error></testcase></testsuite></testsuites>

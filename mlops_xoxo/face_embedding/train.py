@@ -70,8 +70,8 @@ LR = float(params["training"]["lr"])
 MARGIN = float(params["training"]["margin"])
 WEIGHT_DECAY = float(params["training"]["weight_decay"])
 
-DATA_DIR = Path(params["dataset"]["processed_dir"]) / "train"
-VAL_DIR = Path(params["dataset"]["processed_dir"]) / "val"
+DATA_DIR = "data/processed/face_embedding/train"
+VAL_DIR = "data/processed/face_embedding/val"
 
 model_dir, report_dir = prepare_output_dirs("face_embedding")
 EMISSIONS_OUTPUT_PATH = report_dir / "emissions.csv"
