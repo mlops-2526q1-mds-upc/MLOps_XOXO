@@ -1,4 +1,4 @@
-# Run python api/api.py
+# Run 'python api/api.py'
 # Access the API UI (Swagger UI) at http://127.0.0.1:8000 or http://127.0.0.1:8000/docs
 
 import io
