@@ -329,4 +329,4 @@ async def predict_authenticity(file: UploadFile = File(...)):
 # Running the app
 if __name__ == "__main__":
     # Access at http://127.0.0.1:8000 or http://127.0.0.1:8000/docs
-    uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True, app_dir="api")
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True, app_dir="api")

@@ -112,12 +112,6 @@ transform = transforms.Compose([
     transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
 ])
 
-train_ds = FaceDataset(DATA_DIR, transform=transform)
-train_loader = DataLoader(train_ds, batch_size=BATCH, shuffle=True, num_workers=0)
-val_ds = FaceDataset(VAL_DIR, transform=transform)
-val_loader = DataLoader(val_ds, batch_size=BATCH, shuffle=False, num_workers=0)
-print(f"Loaded {len(train_ds.classes)} classes from dataset.")
-
 
 # ============================================================
 # MODEL
@@ -162,6 +156,13 @@ class ArcFaceHead(torch.nn.Module):
 # ============================================================
 
 def train_model(run_id=None):
+    
+    train_ds = FaceDataset(DATA_DIR, transform=transform)
+    train_loader = DataLoader(train_ds, batch_size=BATCH, shuffle=True, num_workers=0)
+    val_ds = FaceDataset(VAL_DIR, transform=transform)
+    val_loader = DataLoader(val_ds, batch_size=BATCH, shuffle=False, num_workers=0)
+    print(f"Loaded {len(train_ds.classes)} classes from dataset.")
+
     NUM_CLASSES = len(train_ds.classes)
     model = MobileFace(emb_size=512).to(DEVICE)
     arcface = ArcFaceHead(emb_size=512, num_classes=NUM_CLASSES, margin=MARGIN).to(DEVICE)
