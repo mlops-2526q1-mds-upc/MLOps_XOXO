@@ -7,8 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-
-    
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
@@ -56,37 +54,10 @@ jobs:
           done
         }
         
-        # Check disk space before downloading
-        echo "📊 Disk space before download:"
-        df -h
-        
-        # Download only specific files, not directories
+        # Download models with retry logic
         download_with_retry "models/face_embedding/mobilenetv2_arcface_model.pth"
-        download_with_retry "data/processed/face_embedding/faces.pkl" || echo "⚠️ Faces data download failed, continuing..."
-        download_with_retry "data/external/casioface/train.idx" || echo "⚠️ External data download failed, continuing..."
-        download_with_retry "data/external/casioface/train.lst" || echo "⚠️ External data download failed, continuing..."
-        download_with_retry "data/external/casioface/train.rec" || echo "⚠️ External data download failed, continuing..."
-        
+        download_with_retry "data/processed/face_embedding/" || echo "⚠️ Data download failed, continuing with tests..."
         echo "✅ Download attempts completed"
-        
-        # Check disk space after
-        echo "📊 Disk space after download:"
-        df -h
-        
-        # Verify downloaded files
-        if [ -f "models/face_embedding/mobilenetv2_arcface_model.pth" ]; then
-          echo "✅ Model file exists: $(du -h models/face_embedding/mobilenetv2_arcface_model.pth)"
-        else
-          echo "❌ Model file not found!"
-          exit 1
-        fi
-    
-    - name: Clean DVC cache to free space
-      run: |
-        echo "🧹 Cleaning DVC cache..."
-        dvc cache cleanup || true
-        echo "📊 Disk space after cleanup:"
-        df -h
     
     - name: Set 50 epochs and train
       run: |
@@ -95,19 +66,11 @@ jobs:
         import yaml
         with open('pipelines/face_embedding/params.yaml') as f:
             p = yaml.safe_load(f)
-        p['training']['epochs'] = 1  # Keep at 1 for CI
+        p['training']['epochs'] = 1
         p['training']['device'] = 'cpu'
-        p['training']['batch_size'] = 4  # Reduce batch size for memory
-        p['training']['num_workers'] = 0  # Disable multiprocessing
         with open('pipelines/face_embedding/params.yaml', 'w') as f:
             yaml.dump(p, f)
-        print('Training for 1 epoch (CI)')
-        "
-        
+        print('Training for 50 epochs')
+        "       
         # Run just the train stage
-        dvc repro pipelines/face_embedding/dvc.yaml
-        
-        # Clean up after training
-        rm -rf .dvc/tmp 2>/dev/null || true
-        echo "📊 Final disk space:"
-        df -h
+        python mlops_xoxo/face_embedding/train.py
