@@ -272,19 +272,28 @@ async def predict_age_gender(file: UploadFile = File(..., description="Image fil
     if age_model is None or gender_model is None:
         raise HTTPException(status_code=503, detail="Age/Gender models not loaded.")
     
+    # Read and preprocess image
     img = await read_imagefile(file)
-    tensor = age_gender_transform(img).unsqueeze(0).to(DEVICE)
+    tensor = age_gender_transform(img).unsqueeze(0).to(DEVICE)   # [1, C, H, W]
+
     with torch.no_grad():
-        age_out = age_model(tensor)
-        gender_out = gender_model(tensor)
-    
-    gender_idx = torch.argmax(gender_out, dim=0).item()
-    gender_label = "Male" if gender_idx == 0 else "Female" 
-    
+        age_out = age_model(tensor)         # shape: [1] or scalar
+        gender_out = gender_model(tensor)   # shape: [1, 2] (batch, logits)
+
+    # ---- Gender Index Fix ----
+    # gender_out: tensor([[logit_male, logit_female]])
+    gender_idx = torch.argmax(gender_out, dim=1).item()
+
+    gender_label = "Male" if gender_idx == 0 else "Female"
+
+    # ---- Confidence Fix ----
+    probs = torch.softmax(gender_out, dim=1)  # softmax on class axis
+    gender_confidence = float(probs[0][gender_idx])
+
     return {
-        "predicted_age": round(age_out.item(), 1),
+        "predicted_age": round(age_out.item(), 1),   # if age_out is scalar
         "gender_label": gender_label,
-        "gender_confidence": float(torch.softmax(gender_out, dim=0)[gender_idx])
+        "gender_confidence": gender_confidence
     }
 
 @app.post("/predict_emotion", summary="Predict Emotion")
