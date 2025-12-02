@@ -73,4 +73,4 @@ jobs:
         print('Training for 50 epochs')
         "       
         # Run just the train stage
-        python mlops_xoxo/face_embedding/train.py
+        python -m mlops_xoxo.face_embedding.train
