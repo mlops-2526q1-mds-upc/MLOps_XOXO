@@ -63,9 +63,9 @@ jobs:
         # Download only specific files, not directories
         download_with_retry "models/face_embedding/mobilenetv2_arcface_model.pth"
         download_with_retry "data/processed/face_embedding/faces.pkl" || echo "⚠️ Faces data download failed, continuing..."
-        download_with_retry "data/external/train.idx" || echo "⚠️ External data download failed, continuing..."
-        download_with_retry "data/external/train.lst" || echo "⚠️ External data download failed, continuing..."
-        download_with_retry "data/external/train.rec" || echo "⚠️ External data download failed, continuing..."
+        download_with_retry "data/external/casioface/train.idx" || echo "⚠️ External data download failed, continuing..."
+        download_with_retry "data/external/casioface/train.lst" || echo "⚠️ External data download failed, continuing..."
+        download_with_retry "data/external/casioface/train.rec" || echo "⚠️ External data download failed, continuing..."
         
         echo "✅ Download attempts completed"
         
