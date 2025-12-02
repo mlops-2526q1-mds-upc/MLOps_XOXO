@@ -33,7 +33,7 @@ jobs:
         # Function to download with retries
         download_with_retry() {
           local file=$1
-          local max_attempts=3
+          local max_attempts=6
           local attempt=1
           
           while [ $attempt -le $max_attempts ]; do
