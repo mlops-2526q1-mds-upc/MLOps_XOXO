@@ -1,0 +1,70 @@
+# Git
+# .git - Copiado para que DVC funcione correctamente
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.venv
+venv/
+env/
+
+# DVC
+# Mantener .dvc/config y config.local (config.local se copia pero contiene credenciales)
+.dvc/cache
+.dvc/tmp
+
+data/
+dvc.lock
+dvc.yaml
+
+# MLflow
+mlruns/
+mlflow_run_id.txt
+
+# Pipelines - Necesarios para la API, no ignorar
+# pipelines/
+
+# Reports y documentación
+reports/
+docs/
+*.md
+!README.md
+
+# Tests
+tests/
+test.py
+
+# Notebooks
+notebooks/
+*.ipynb
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Modelos (se montan como volumen persistente, no copiar en imagen)
+models/
+
+# PDFs y otros
+*.pdf
+*.docx
+
+# Environment
+.env.local
+*.log
+

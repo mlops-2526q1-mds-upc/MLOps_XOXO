@@ -280,8 +280,10 @@ async def predict_age_gender(file: UploadFile = File(..., description="Image fil
     if age_model is None or gender_model is None:
         raise HTTPException(status_code=503, detail="Age/Gender models not loaded.")
     
+    # Read and preprocess image
     img = await read_imagefile(file)
-    tensor = age_gender_transform(img).unsqueeze(0).to(DEVICE)
+    tensor = age_gender_transform(img).unsqueeze(0).to(DEVICE)   # [1, C, H, W]
+
     with torch.no_grad():
         age_out = age_model(tensor)
         gender_out = gender_model(tensor)
@@ -293,7 +295,7 @@ async def predict_age_gender(file: UploadFile = File(..., description="Image fil
     gender_confidence = gender_probs[gender_idx].item()
     
     return {
-        "predicted_age": round(age_out.item(), 1),
+        "predicted_age": round(age_out.item(), 1),   # if age_out is scalar
         "gender_label": gender_label,
         "gender_confidence": round(gender_confidence, 4)
     }
@@ -341,4 +343,4 @@ async def predict_authenticity(file: UploadFile = File(...)):
 # Running the app
 if __name__ == "__main__":
     # Access at http://127.0.0.1:8000 or http://127.0.0.1:8000/docs
-    uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True, app_dir="api")
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True, app_dir="api")
