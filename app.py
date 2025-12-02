@@ -5,6 +5,7 @@ import streamlit as st
 import requests
 from PIL import Image
 import io
+import os
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -14,7 +15,8 @@ st.set_page_config(
 )
 
 # Base URL of the running FastAPI
-FAST_API_URL = "http://127.0.0.1:8000"
+# FAST_API_URL = "http://127.0.0.1:8000"
+FAST_API_URL = os.getenv("FAST_API_URL", "http://127.0.0.1:8000")
 
 # Page Title 
 st.title("XOFace - Face Analysis")

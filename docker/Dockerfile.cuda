@@ -1,0 +1,64 @@
+FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
+
+# Instalar Python y dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    python3.13 \
+    python3.13-dev \
+    python3-pip \
+    libgl1 \
+    libglib2.0-0 \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Crear symlink para python
+RUN ln -s /usr/bin/python3.13 /usr/bin/python && \
+    ln -s /usr/bin/pip3 /usr/bin/pip
+
+# Instalar uv
+RUN pip install --no-cache-dir uv
+
+WORKDIR /app
+
+# Copiar archivos de dependencias
+COPY pyproject.toml ./
+
+# Instalar dependencias Python (sin dev)
+# No usamos --frozen porque el lockfile puede estar generado para otra plataforma
+RUN uv sync --no-dev
+
+# Instalar PyTorch con soporte CUDA
+RUN uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# Copiar código del proyecto
+COPY . .
+
+# Copiar script entrypoint
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Crear directorio .dvc (config se maneja en entrypoint.sh)
+RUN mkdir -p .dvc
+
+# Crear directorios necesarios
+RUN mkdir -p models/face_embedding \
+             models/age_gender \
+             models/emotion_classification \
+             models/fake_classification \
+             reports \
+             .dvc
+
+# Variables de entorno
+ENV PYTHONPATH=/app
+ENV PATH="/app/.venv/bin:$PATH"
+ENV DEVICE=cuda
+
+# Exponer puertos
+EXPOSE 8000 8501
+
+# Usar entrypoint para descargar modelos si es necesario
+ENTRYPOINT ["/entrypoint.sh"]
+
+# Comando por defecto
+CMD ["python", "api/api.py"]
+
