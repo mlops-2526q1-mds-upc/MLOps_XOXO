@@ -2,53 +2,32 @@ services:
   api:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.api
     container_name: xoface-api
     ports:
       - "8000:8000"
     volumes:
-      # Volumen persistente para modelos (se descargan automáticamente si no existen)
       - xoface-models:/app/models
-      # Volumen persistente para configuración DVC (opcional, para credenciales)
       - xoface-dvc-config:/app/.dvc
     environment:
       - PYTHONPATH=/app
       - DEVICE=cpu
-      # Opcional: Credenciales DVC para descargar modelos automáticamente
-      # Si no se proporcionan, los modelos deben estar en el volumen persistente
       - DVC_USER=${DVC_USER:-}
       - DVC_PASSWORD=${DVC_PASSWORD:-}
     command: python api/api.py
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   ui:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.ui
     container_name: xoface-ui
     ports:
       - "8501:8501"
-    volumes:
-      # Compartir el mismo volumen de modelos con la API
-      - xoface-models:/app/models
     environment:
       - PYTHONPATH=/app
-      - FAST_API_URL=http://api:8000
+      - FAST_API_URL=http://10.4.41.80:8000
     command: streamlit run app.py --server.address=0.0.0.0 --server.port=8501
-    depends_on:
-      api:
-        condition: service_healthy
 
-# Volúmenes persistentes
 volumes:
-  # Volumen para modelos (persisten entre reinicios del contenedor)
   xoface-models:
-    driver: local
-  # Volumen para configuración DVC (opcional, para guardar credenciales)
   xoface-dvc-config:
-    driver: local
-

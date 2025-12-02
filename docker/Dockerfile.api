@@ -1,0 +1,41 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install backend dependencies
+RUN apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends \
+        libgl1 \
+        libglib2.0-0 \
+        git \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy project files
+COPY . .
+
+# Install ML + API deps
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir \
+        "fastapi>=0.117.1" \
+        "uvicorn[standard]>=0.36.0" \
+        "python-multipart>=0.0.6" \
+        "pillow>=10.0.0" \
+        "numpy>=2.3.3" \
+        "opencv-python-headless>=4.8.0" \
+        torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu \
+        "pyyaml>=6.0" \
+        "tqdm>=4.66.0" \
+        "python-dotenv>=1.0.0" \
+        "pandas>=2.3.2" \
+        "scikit-learn>=1.5.0" \
+        "mlflow<3.0" \
+        "dvc>=3.63.0" \
+        "dvc-s3>=3.0.0" \
+        "codecarbon>=3.0.5"
+
+ENV PYTHONPATH=/app
+
+EXPOSE 8000
+
+CMD ["python", "api/api.py"]
