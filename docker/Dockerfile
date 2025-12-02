@@ -17,8 +17,7 @@ WORKDIR /app
 # Instalar solo dependencias esenciales para producción (API + UI)
 # Usar las mismas versiones que el proyecto (torch 2.8.0, torchvision 0.23.0)
 RUN pip install --no-cache-dir \
-    torch==2.8.0 \
-    torchvision==0.23.0
+    torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Dependencias core para la API
 RUN pip install --no-cache-dir \
