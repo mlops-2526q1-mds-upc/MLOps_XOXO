@@ -41,6 +41,7 @@ dependencies = [
     "python-multipart>=0.0.6",
     "streamlit>=1.51.0",
     "requests>=2.32.5",
+    "httpx",
 ]
 
 [dependency-groups]

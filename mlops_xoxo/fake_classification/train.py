@@ -32,7 +32,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 # --- Shared utilities ---
-from .train_util import (
+from train_util import (
     init_mlflow, start_emissions_tracker, get_device,
     log_metrics_mlflow, log_params_mlflow, prepare_output_dirs
 )

@@ -1,7 +1,7 @@
 # Run 'python api/api.py'
 # Access the API UI (Swagger UI) at http://127.0.0.1:8000 or http://127.0.0.1:8000/docs
 
-import io
+import io, os
 import sys
 from pathlib import Path
 import torch
@@ -37,6 +37,14 @@ else:
 print(f"API using device: {DEVICE}")
 
 # Load face embedding model
+# repo root
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# correct directory name (underscore)
+FACE_EMB = os.path.join(ROOT, "mlops_xoxo", "face_embedding")
+
+sys.path.append(ROOT)
+sys.path.append(FACE_EMB)
 from mlops_xoxo.face_embedding.train import MobileFace
 
 EMBEDDING_MODEL_PATH = project_root / "models/face_embedding/mobilenetv2_arcface_model.pth" 
@@ -277,23 +285,19 @@ async def predict_age_gender(file: UploadFile = File(..., description="Image fil
     tensor = age_gender_transform(img).unsqueeze(0).to(DEVICE)   # [1, C, H, W]
 
     with torch.no_grad():
-        age_out = age_model(tensor)         # shape: [1] or scalar
-        gender_out = gender_model(tensor)   # shape: [1, 2] (batch, logits)
+        age_out = age_model(tensor)
+        gender_out = gender_model(tensor)
+    
+    gender_idx = torch.argmax(gender_out.flatten()).item()
+    gender_label = "Male" if gender_idx == 0 else "Female" 
 
-    # ---- Gender Index Fix ----
-    # gender_out: tensor([[logit_male, logit_female]])
-    gender_idx = torch.argmax(gender_out, dim=1).item()
-
-    gender_label = "Male" if gender_idx == 0 else "Female"
-
-    # ---- Confidence Fix ----
-    probs = torch.softmax(gender_out, dim=1)  # softmax on class axis
-    gender_confidence = float(probs[0][gender_idx])
-
+    gender_probs = torch.softmax(gender_out.flatten(), dim=0)
+    gender_confidence = gender_probs[gender_idx].item()
+    
     return {
         "predicted_age": round(age_out.item(), 1),   # if age_out is scalar
         "gender_label": gender_label,
-        "gender_confidence": gender_confidence
+        "gender_confidence": round(gender_confidence, 4)
     }
 
 @app.post("/predict_emotion", summary="Predict Emotion")
@@ -335,6 +339,7 @@ async def predict_authenticity(file: UploadFile = File(...)):
         "confidence": probs[0][pred_idx].item(),
         "is_fake": predicted_class.lower() == "fake"
     }
+
 # Running the app
 if __name__ == "__main__":
     # Access at http://127.0.0.1:8000 or http://127.0.0.1:8000/docs
