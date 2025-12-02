@@ -7,15 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Clean up disk space before starting
-      run: |
-        echo "🧹 Cleaning up disk space..."
-        df -h
-        sudo apt-get clean
-        sudo rm -rf /var/lib/apt/lists/*
-        sudo rm -rf /usr/local/lib/android 2>/dev/null || true
-        rm -rf ~/.cache/pip 2>/dev/null || true
-        echo "✅ Cleanup done"
+
     
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
