@@ -1,0 +1,8 @@
+
+Emotion dataset validation
+==========================
+raw_dir: data\raw\emotion
+
+class counts:
+    test: 7
+    train: 7

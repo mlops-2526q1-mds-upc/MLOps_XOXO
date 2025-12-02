@@ -1,0 +1,72 @@
+stages:
+  ingest:
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/data_ingest.py
+    deps:
+      - mlops_xoxo/age_gender/data_ingest.py
+      - data/raw/age_gender/UTKFace
+    outs:
+      - data/processed/age_gender/utkface_metadata.csv
+
+  split:
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/data_split.py
+    deps:
+      - mlops_xoxo/age_gender/data_split.py
+      - data/processed/age_gender/utkface_metadata.csv
+    outs:
+      - data/processed/age_gender/splits
+
+  validate:
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/data_validate.py
+    deps:
+      - mlops_xoxo/age_gender/data_validate.py
+      - data/processed/age_gender/utkface_metadata.csv
+      - data/raw/age_gender/UTKFace
+    outs:
+      - data/processed/age_gender/validation
+
+  train:
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/train.py
+    deps:
+      - mlops_xoxo/age_gender/train.py
+      - mlops_xoxo/age_gender/config.py
+      - data/processed/age_gender/splits/train.csv
+      - data/processed/age_gender/splits/val.csv
+    params:
+      - pipelines/age_gender/params.yaml:
+          - training
+          - mlflow
+    outs:
+      - models/age_gender/gender_model.pt
+      - models/age_gender/age_model.pt
+
+  eval:
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/eval.py
+    deps:
+      - mlops_xoxo/age_gender/eval.py
+      - mlops_xoxo/age_gender/config.py
+      - models/age_gender/gender_model.pt
+      - models/age_gender/age_model.pt
+      - data/processed/age_gender/splits/val.csv
+    params:
+      - pipelines/age_gender/params.yaml:
+          - mlflow
+    outs:
+      - reports/age_gender/evaluation
+
+  test:
+    wdir: ../..
+    cmd: python mlops_xoxo/age_gender/test.py
+    deps:
+      - mlops_xoxo/age_gender/test.py
+      - mlops_xoxo/age_gender/config.py
+      - models/age_gender/gender_model.pt
+      - models/age_gender/age_model.pt
+      - data/processed/age_gender/splits/test.csv
+      - pipelines/age_gender/params.yaml
+    outs:
+      - reports/age_gender/test_results

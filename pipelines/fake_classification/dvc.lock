@@ -1,0 +1,136 @@
+schema: '2.0'
+stages:
+  ingest:
+    cmd: python mlops_xoxo/fake_classification/data_ingest.py
+    deps:
+    - path: mlops_xoxo/fake_classification/data_ingest.py
+      hash: md5
+      md5: a51b8681cda7cac8b5727f0a98d58c0e
+      size: 5944
+    outs:
+    - path: data/external/fake_classification/hf_cache
+      hash: md5
+      md5: 48bdfc37f095d08000caab94c196e949.dir
+      size: 616521428
+      nfiles: 1
+    - path: data/raw/fake_classification
+      hash: md5
+      md5: 2bfefb366f473b463aac96314a542625.dir
+      size: 630395251
+      nfiles: 3213
+  preprocess:
+    cmd: python mlops_xoxo/fake_classification/data_preprocess.py
+    deps:
+    - path: data/raw/fake_classification
+      hash: md5
+      md5: 2bfefb366f473b463aac96314a542625.dir
+      size: 630395251
+      nfiles: 3213
+    - path: mlops_xoxo/fake_classification/data_preprocess.py
+      hash: md5
+      md5: 6c78c55653e62d9be86ea68c5900d0a1
+      size: 3760
+    params:
+      pipelines/fake_classification/params.yaml:
+        preprocessing:
+          image_size: 224
+          margin: 0.25
+    outs:
+    - path: data/processed/fake_classification/val
+      hash: md5
+      md5: b56c6d13a5168b5601520a08b43bc53f.dir
+      size: 171826320
+      nfiles: 2943
+  split:
+    cmd: python mlops_xoxo/fake_classification/data_split.py
+    deps:
+    - path: data/processed/fake_classification/val
+      hash: md5
+      md5: b56c6d13a5168b5601520a08b43bc53f.dir
+      size: 171826320
+      nfiles: 2943
+    - path: mlops_xoxo/fake_classification/data_split.py
+      hash: md5
+      md5: c5ada346d5653513e3a811a82de8a1cd
+      size: 2683
+    params:
+      pipelines/fake_classification/params.yaml:
+        dataset:
+          external_dir: data/external/
+          processed_dir: data/processed/
+          raw_dir: data/raw/
+          split:
+            test: 0.15
+            train: 0.7
+            val: 0.15
+    outs:
+    - path: data/processed/fake_classification/split
+      hash: md5
+      md5: 0d23ce1199aa86ee97f8e7cb7c50b676.dir
+      size: 171499407
+      nfiles: 2941
+  train:
+    cmd: python mlops_xoxo/fake_classification/train.py
+    deps:
+    - path: data/processed/fake_classification/split
+      hash: md5
+      md5: 0d23ce1199aa86ee97f8e7cb7c50b676.dir
+      size: 171499407
+      nfiles: 2941
+    - path: data/processed/fake_classification/val/normalization.json
+      hash: md5
+      md5: 18d8227ea3b9374ad2af240b7e4a2d57
+      size: 182
+    - path: mlops_xoxo/fake_classification/train.py
+      hash: md5
+      md5: 701d68797dc15819bdfc122ad0f601ad
+      size: 14218
+    params:
+      pipelines/fake_classification/params.yaml:
+        training:
+          backbone: mobilenet_v3_small
+          batch_size: 64
+          device: mps
+          epochs: 3
+          export_onnx: 1
+          freeze_backbone: true
+          lr: 0.001
+          num_workers: 4
+          weight_decay: 0.0001
+    outs:
+    - path: models/fake_classification/
+      hash: md5
+      md5: bc50b37bb313f06b6cfd2507f2e0466d.dir
+      size: 12422556
+      nfiles: 6
+  eval:
+    cmd: python mlops_xoxo/fake_classification/eval.py
+    deps:
+    - path: data/processed/fake_classification/split
+      hash: md5
+      md5: 0d23ce1199aa86ee97f8e7cb7c50b676.dir
+      size: 171499407
+      nfiles: 2941
+    - path: mlops_xoxo/fake_classification/eval.py
+      hash: md5
+      md5: 6053abed6d711c6a61229f2961ab0b03
+      size: 6781
+    - path: models/fake_classification/
+      hash: md5
+      md5: bc50b37bb313f06b6cfd2507f2e0466d.dir
+      size: 12422556
+      nfiles: 6
+    params:
+      pipelines/fake_classification/params.yaml:
+        mlflow:
+          experiment_id: '5'
+          experiment_name: fake_classification
+          run_id: f401ce1f88d44fe5a5c47a2a1a61b344
+          run_name: fake_classification_3_epochs
+          tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
+    outs:
+    - path: reports/fake_classification/
+      hash: md5
+      md5: db1accd7e1da63d3c570462fa3e29f50.dir
+      size: 228
+      nfiles: 2

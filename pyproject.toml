@@ -13,7 +13,6 @@ dependencies = [
     "torchvision",
     "facenet-pytorch",
     "mlflow",
-    "dvc",
     "opencv-python",
     "scikit-learn",
     "matplotlib",
@@ -31,6 +30,16 @@ dependencies = [
     "pylint>=3.3.8",
     "flake8>=7.3.0",
     "pytest-mock>=3.15.1",
+    "transformers",
+    "pillow",
+    "ultralytics",
+    "opencv-python",
+    "fastapi>=0.117.1",
+    "uvicorn[standard]>=0.36.0",
+    "loguru>=0.7.3",
+    "python-multipart>=0.0.6",
+    "streamlit>=1.51.0",
+    "requests>=2.32.5",
 ]
 
 [dependency-groups]
@@ -51,3 +60,6 @@ omit = [
     "mlops_xoxo/test.py",
     "mlops_xoxo/test_nested_mlflow.py",
 ]
+[tool.setuptools]
+packages = ["mlops_xoxo"]
+

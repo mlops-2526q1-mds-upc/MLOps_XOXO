@@ -1,0 +1,125 @@
+schema: '2.0'
+stages:
+  ingest:
+    cmd: python -m mlops_xoxo.face_embedding.data_ingest
+    deps:
+    - path: data/external/casioface/train.idx
+      hash: md5
+      md5: 0b4801a39ba6237c891dcfb777eeb295
+      size: 8707814
+    - path: data/external/casioface/train.lst
+      hash: md5
+      md5: 99d49349533309391272473538054a0d
+      size: 73167925
+    - path: data/external/casioface/train.rec
+      hash: md5
+      md5: 459c18fd8152cc1d4a9484c3f0713d19
+      size: 2726043620
+    - path: mlops_xoxo/face_embedding/data_ingest.py
+      hash: md5
+      md5: 60d4aee6ae92efcce77b69ab3163b953
+      size: 493
+    outs:
+    - path: data/raw/face_embedding
+      hash: md5
+      md5: 560985c1fe22c75212e70058f38e54cf.dir
+      size: 54198793
+      nfiles: 10000
+  split:
+    cmd: python -m mlops_xoxo.face_embedding.data_split
+    deps:
+    - path: data/raw/face_embedding
+      hash: md5
+      md5: 560985c1fe22c75212e70058f38e54cf.dir
+      size: 54198793
+      nfiles: 10000
+    - path: mlops_xoxo/face_embedding/data_split.py
+      hash: md5
+      md5: 1765bda50de7075cb5ad64ebf0c0b1c0
+      size: 2297
+    outs:
+    - path: data/processed/face_embedding
+      hash: md5
+      md5: 1d58b774280755bc0c7c250eebb4faff.dir
+      size: 54852743
+      nfiles: 10001
+  validate:
+    cmd: python mlops_xoxo/face_embedding/data_validate.py
+    deps:
+    - path: data/raw/face_embedding
+      hash: md5
+      md5: 560985c1fe22c75212e70058f38e54cf.dir
+      size: 54198793
+      nfiles: 10000
+    - path: mlops_xoxo/face_embedding/data_validate.py
+      hash: md5
+      md5: 5a05c9f6b1231784d144a20c4570b79e
+      size: 2872
+    outs:
+    - path: docs/face_embedding
+      hash: md5
+      md5: 1880cca69b31bafe1cf8071d56f14cb0.dir
+      size: 203
+      nfiles: 1
+  train:
+    cmd: python -m mlops_xoxo.face_embedding.train > mlflow_run_id.txt
+    deps:
+    - path: data/processed/face_embedding/train
+      hash: md5
+      md5: f96675bfd8aa94010a2dc7356b66dd83.dir
+      size: 37834438
+      nfiles: 6974
+    - path: mlops_xoxo/face_embedding/train.py
+      hash: md5
+      md5: cc022bd5798a206f9a7f0a2a0a972ab3
+      size: 10471
+    params:
+      pipelines/face_embedding/params.yaml:
+        training:
+          batch_size: 64
+          device: cpu
+          embedding_size: 512
+          epochs: 1
+          lr: 0.0001
+          margin: 0.2
+          weight_decay: 0.0001
+    outs:
+    - path: models/face_embedding
+      hash: md5
+      md5: 61cc4af3a9283916b45d104227ff77db.dir
+      size: 11774747
+      nfiles: 1
+    - path: reports/face_embedding/emissions.csv
+      hash: md5
+      md5: 3653c74d45c5813945eba715dd2856d2
+      size: 859
+  eval:
+    cmd: python mlops_xoxo/face_embedding/eval.py
+    deps:
+    - path: data/processed/face_embedding/val
+      hash: md5
+      md5: 383bb3f60bd80705bff4b64c74117bc5.dir
+      size: 10744146
+      nfiles: 1975
+    - path: mlops_xoxo/face_embedding/eval.py
+      hash: md5
+      md5: a0dfc6ded6036ac91b013507805fee0a
+      size: 5640
+    - path: models/face_embedding
+      hash: md5
+      md5: 22f046f9d5f75aa29dea6800d94f2cda.dir
+      size: 11774747
+      nfiles: 1
+    - path: pipelines/face_embedding/params.yaml
+      hash: md5
+      md5: 982a619bc8477af48f7d806d0f2978aa
+      size: 660
+    outs:
+    - path: reports/face_embedding/eval_predictions.json
+      hash: md5
+      md5: e4fb0e02a5c9bb515a74af22ca474149
+      size: 259484
+    - path: reports/face_embedding/eval_summary.txt
+      hash: md5
+      md5: 2b618f6f32a34170681825bf2921c258
+      size: 85
