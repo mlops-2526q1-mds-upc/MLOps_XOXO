@@ -59,14 +59,14 @@ jobs:
     - name: Stop and remove old container
       run: |
         echo "Stopping and removing old container..."
-        docker stop mlops_xoxo-api 2>/dev/null || true
-        docker rm mlops_xoxo-api 2>/dev/null || true
+        docker stop xoface-api 2>/dev/null || true
+        docker rm xoface-api 2>/dev/null || true
 
     - name: Start new container
       run: |
         echo "Starting new container..."
         docker run -d \
-          --name mlops_xoxo-api \
+          --name xoface-api \
           -p 8000:8000 \
           --restart unless-stopped \
           ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
@@ -74,7 +74,7 @@ jobs:
     - name: Verify container is running
       run: |
         echo "Verifying container is running..."
-        docker ps | grep mlops_xoxo-api
+        docker ps | grep xoface-api
 
     - name: Clean up old images
       run: |
