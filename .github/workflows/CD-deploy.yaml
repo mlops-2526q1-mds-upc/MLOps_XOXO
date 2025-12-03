@@ -43,36 +43,43 @@ jobs:
         docker push ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
 
   deploy-to-vm:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: deploy
 
     steps:
-    - name: Deploy to VM via SSH
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.VM_HOST }}
-        username: ${{ secrets.VM_USER }}
-        password: ${{ secrets.VM_PASSWORD }}
-        port: 22
-        script: |
-          echo "Pulling latest image from Docker Hub..."
-          docker pull ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
+    - name: Docker login
+      run: |
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-          echo "Stopping and removing old container..."
-          docker stop mlops_xoxo-api 2>/dev/null || true
-          docker rm mlops_xoxo-api 2>/dev/null || true
+    - name: Pull latest image from Docker Hub
+      run: |
+        echo "Pulling latest image from Docker Hub..."
+        docker pull ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
 
-          echo "Starting new container..."
-          docker run -d \
-            --name mlops_xoxo-api \
-            -p 8000:8000 \
-            --restart unless-stopped \
-            ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
+    - name: Stop and remove old container
+      run: |
+        echo "Stopping and removing old container..."
+        docker stop mlops_xoxo-api 2>/dev/null || true
+        docker rm mlops_xoxo-api 2>/dev/null || true
 
-          echo "Verifying container is running..."
-          docker ps | grep mlops_xoxo-api
+    - name: Start new container
+      run: |
+        echo "Starting new container..."
+        docker run -d \
+          --name mlops_xoxo-api \
+          -p 8000:8000 \
+          --restart unless-stopped \
+          ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
 
-          echo "Cleaning up old images..."
-          docker image prune -f
+    - name: Verify container is running
+      run: |
+        echo "Verifying container is running..."
+        docker ps | grep mlops_xoxo-api
 
-          echo "Deployment completed successfully!"
+    - name: Clean up old images
+      run: |
+        echo "Cleaning up old images..."
+        docker image prune -f
+
+    - name: Deployment completed
+      run: echo "Deployment completed successfully!"
