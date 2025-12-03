@@ -1,43 +1,58 @@
 name: Deploy API to Production
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
 
 jobs:
-  train:
+  build-and-test:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
+    - name: Checkout code
+      uses: actions/checkout@v4
     
-    - name: Install
+    - name: Test Docker Compose Build
       run: |
-        pip install torch dvc dvc-http
-        pip install -e .
-    
-    - name: Setup DVC
-      env:
-        DAGSHUB_USER: ${{ secrets.DAGSHUB_DVC_USER }}
-        DAGSHUB_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
-      run: |
-        dvc remote modify origin auth basic
-        dvc remote modify origin user "$DAGSHUB_USER"
-        dvc remote modify origin password "$DAGSHUB_PASS"
-    
-    - name: Download face embedding data
-      run: |
-        echo "📥 Downloading face embedding data..."
+        echo "🧪 Testing Docker Compose build..."
         
-        # Simple download without retry logic
-        dvc pull models/face_embedding/mobilenetv2_arcface_model.pth || echo "No pretrained model found"
-        dvc pull models/age_gender/age_model.pt || echo "No pretrained model found"
-        dvc pull models/age_gender/gender_model.pt || echo "No pretrained model found"
-        dvc pull models/emotion_classification/best_model.pth || echo "No pretrained model found"
-        dvc pull models/fake_classification/model_best.pth || echo "No pretrained model found"
-
-
-        echo "✅ Download completed"
+        # Test that docker-compose builds successfully
+        docker-compose -f docker-compose.yml build
+        
+        echo "✅ Docker Compose build successful"
     
+    - name: Test API container
+      run: |
+        echo "🚀 Testing API container..."
+        
+        # Build just the API service
+        docker-compose -f docker-compose.yml build api
+        
+        # Run a simple test
+        docker-compose -f docker-compose.yml run --rm api python -c "
+        import sys
+        sys.path.insert(0, '/app')
+        try:
+            from api.api import app
+            print('✅ API imports successfully')
+        except Exception as e:
+            print(f'❌ Error: {e}')
+            sys.exit(1)
+        "
+        
+        echo "✅ API container test passed"
     
+    - name: Test entrypoint script
+      run: |
+        echo "🔧 Testing entrypoint script..."
+        
+        # Test the entrypoint script
+        docker run --rm \
+          -e DVC_USER=test \
+          -e DVC_PASSWORD=test \
+          $(docker-compose -f docker-compose.yml config | grep 'image:' | head -1 | awk '{print $2}') \
+          /entrypoint.sh echo "✅ Entrypoint script works"
+        
+        echo "✅ Entrypoint test passed"
+
+    ##
