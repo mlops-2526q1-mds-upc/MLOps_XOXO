@@ -26,51 +26,45 @@ jobs:
         dvc remote modify origin user "$DAGSHUB_USER"
         dvc remote modify origin password "$DAGSHUB_PASS"
     
-    - name: Download face embedding data + models with retry
+    - name: Download face embedding data
       run: |
-        echo "📥 Downloading face embedding models with retry logic..."
+        echo "📥 Downloading face embedding data..."
         
-        # Function to download with retries
-        download_with_retry() {
-          local file=$1
-          local max_attempts=6
-          local attempt=1
-          
-          while [ $attempt -le $max_attempts ]; do
-            echo "Attempt $attempt to download: $file"
-            if dvc pull "$file"; then
-              echo "✅ Successfully downloaded: $file"
-              return 0
-            else
-              echo "⚠️ Attempt $attempt failed for: $file"
-              if [ $attempt -eq $max_attempts ]; then
-                echo "❌ All attempts failed for: $file"
-                return 1
-              fi
-              echo "🔄 Retrying in 5 seconds..."
-              sleep 5
-              ((attempt++))
-            fi
-          done
-        }
+        # Simple download without retry logic
+        dvc pull models/face_embedding/mobilenetv2_arcface_model.pth || echo "No pretrained model found"
+        dvc pull data/processed/face_embedding/ || echo "Data download failed"
         
-        # Download models with retry logic
-        download_with_retry "models/face_embedding/mobilenetv2_arcface_model.pth"
-        download_with_retry "data/processed/face_embedding/" || echo "⚠️ Data download failed, continuing with tests..."
-        echo "✅ Download attempts completed"
+        echo "✅ Download completed"
     
-    - name: Set 50 epochs and train
+    - name: Train model
       run: |
-        # Update params
+        # Update params for CI
         python -c "
         import yaml
         with open('pipelines/face_embedding/params.yaml') as f:
             p = yaml.safe_load(f)
         p['training']['epochs'] = 1
         p['training']['device'] = 'cpu'
+        p['training']['batch_size'] = 4  # Smaller batch for CD
         with open('pipelines/face_embedding/params.yaml', 'w') as f:
             yaml.dump(p, f)
-        print('Training for 50 epochs')
-        "       
-        # Run just the train stage
-        python -m mlops_xoxo.face_embedding.train
+        print('Training for 1 epoch')
+        "
+        
+        # Run training WITHOUT MLflow
+        python -m mlops_xoxo.face_embedding.train_CD
+    
+    - name: Push trained model to DVC
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        echo "📤 Pushing trained model to DVC..."
+        
+        # Check if model was created
+        if [ -f "models/face_embedding/mobilenetv2_arcface_model.pth" ]; then
+          echo "Model file exists, pushing to DVC..."
+          dvc add models/face_embedding/mobilenetv2_arcface_model.pth --force
+          dvc push models/face_embedding/mobilenetv2_arcface_model.pth
+          echo "✅ Model pushed to DVC"
+        else
+          echo "❌ No model file found to push"
+        fi
