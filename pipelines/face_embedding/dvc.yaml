@@ -1,21 +1,12 @@
 stages:
   ingest:
     wdir: ../..
-<<<<<<< HEAD
     cmd: python -m mlops_xoxo.face_embedding.data_ingest
     deps:
       - mlops_xoxo/face_embedding/data_ingest.py
       - data/external/casioface/train.rec
       - data/external/casioface/train.idx
       - data/external/casioface/train.lst
-=======
-    cmd: python mlops_xoxo/face_embedding/data_ingest.py
-    deps:
-      - mlops_xoxo/face_embedding/data_ingest.py
-      - data/external/face_embedding/casioface/train.rec
-      - data/external/face_embedding/casioface/train.idx
-      - data/external/face_embedding/casioface/train.lst
->>>>>>> origin/MPX-47-packaging-of-ml-components-dockerization
     outs:
       - data/raw/face_embedding
 
@@ -30,11 +21,7 @@ stages:
 
   split:
     wdir: ../..
-<<<<<<< HEAD
     cmd: python -m mlops_xoxo.face_embedding.data_split
-=======
-    cmd: python mlops_xoxo/face_embedding/data_split.py
->>>>>>> origin/MPX-47-packaging-of-ml-components-dockerization
     deps:
       - mlops_xoxo/face_embedding/data_split.py
       - data/raw/face_embedding
