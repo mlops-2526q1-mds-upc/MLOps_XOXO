@@ -54,5 +54,3 @@ jobs:
           /entrypoint.sh echo "✅ Entrypoint script works"
         
         echo "✅ Entrypoint test passed"
-
-    ##
