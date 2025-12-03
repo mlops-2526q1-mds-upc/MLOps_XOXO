@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [INFO] Seed set to 42
 [INFO] Model directory: models/emotion_classification
 [INFO] Report directory: reports/emotion_classification
@@ -30,3 +31,5 @@ Epoch 1/1 | Train Loss: 1.5132 | Train Acc: 0.4286 | Train Macro F1: 0.3321
 [INFO] Best model achieved val_macro_f1=0.3840 at epoch 1
 🏃 View run emotion_classification_200_epochs at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/7/runs/391e2a0366b84b649de972aa6724b78d
 🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/7
+=======
+>>>>>>> origin/MPX-47-packaging-of-ml-components-dockerization

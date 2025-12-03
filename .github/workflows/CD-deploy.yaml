@@ -40,35 +40,4 @@ jobs:
 
         echo "✅ Download completed"
     
-    - name: Train model
-      run: |
-        # Update params for CI
-        python -c "
-        import yaml
-        with open('pipelines/face_embedding/params.yaml') as f:
-            p = yaml.safe_load(f)
-        p['training']['epochs'] = 1
-        p['training']['device'] = 'cpu'
-        p['training']['batch_size'] = 4  # Smaller batch for CD
-        with open('pipelines/face_embedding/params.yaml', 'w') as f:
-            yaml.dump(p, f)
-        print('Training for 1 epoch')
-        "
-        
-        # Run training WITHOUT MLflow
-        python -m mlops_xoxo.face_embedding.train_CD
     
-    - name: Push trained model to DVC
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      run: |
-        echo "📤 Pushing trained model to DVC..."
-        
-        # Check if model was created
-        if [ -f "models/face_embedding/mobilenetv2_arcface_model.pth" ]; then
-          echo "Model file exists, pushing to DVC..."
-          dvc add models/face_embedding/mobilenetv2_arcface_model.pth --force
-          dvc push models/face_embedding/mobilenetv2_arcface_model.pth
-          echo "✅ Model pushed to DVC"
-        else
-          echo "❌ No model file found to push"
-        fi

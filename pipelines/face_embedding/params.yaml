@@ -1,7 +1,7 @@
 dataset:
-  external_dir: data/external/
-  processed_dir: data/processed/face_embedding/
-  raw_dir: data/raw/face_embedding/
+  external_dir: data/external/face_embedding
+  processed_dir: data/processed/face_embedding
+  raw_dir: data/raw/face_embedding
   split:
     test: 0.15
     train: 0.7

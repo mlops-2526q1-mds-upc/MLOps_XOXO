@@ -48,7 +48,7 @@ jobs:
         p['training']['batch_size'] = 4  # Smaller batch for CD
         with open('pipelines/face_embedding/params.yaml', 'w') as f:
             yaml.dump(p, f)
-        print('Training for 1 epoch')
+        print('Training for 50 epochs')
         "
         
         # Run training WITHOUT MLflow
