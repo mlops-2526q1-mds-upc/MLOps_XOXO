@@ -32,10 +32,20 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
         "mlflow<3.0" \
         "dvc>=3.63.0" \
         "dvc-s3>=3.0.0" \
-        "codecarbon>=3.0.5"
-
+        "codecarbon>=3.0.5" \
+        "prometheus-fastapi-instrumentator>=7.1.0"
 ENV PYTHONPATH=/app
 
 EXPOSE 8000
+
+# 1. Copy the entrypoint script into the container
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+# 2. Ensure it is executable inside the container
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# 3. Set the Entrypoint
+# This script will run first, and then it will execute the CMD
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 CMD ["python", "api/api.py"]

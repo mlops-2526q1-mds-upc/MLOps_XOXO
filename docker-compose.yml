@@ -9,6 +9,7 @@ services:
     volumes:
       - xoface-models:/app/models
       - xoface-dvc-config:/app/.dvc
+      - ./.dvc/config.local:/app/.dvc/config.local:ro
     environment:
       - PYTHONPATH=/app
       - DEVICE=cpu
@@ -28,6 +29,42 @@ services:
       - FAST_API_URL=http://10.4.41.80:8000
     command: streamlit run app.py --server.address=0.0.0.0 --server.port=8501
 
+  prometheus:
+      image: prom/prometheus:latest
+      container_name: xoface-prometheus
+      ports:
+        - "9090:9090"
+      volumes:
+        - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        - prometheus_data:/prometheus
+      command:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+        - '--storage.tsdb.path=/prometheus'
+        - '--storage.tsdb.retention.time=7d' # Keep data for 7 days
+      depends_on:
+        - api
+        - node-exporter
+    
+  grafana:
+    image: grafana/grafana:latest
+    container_name: xoface-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana # Saves dashboards persistently
+    depends_on:
+      - prometheus
+
+  node-exporter: # For hardware monitoring (CPU/RAM)
+    image: prom/node-exporter:latest
+    container_name: xoface-node-exporter
+    ports:
+      - "9100:9100"
+
 volumes:
   xoface-models:
   xoface-dvc-config:
+  prometheus_data:
+  grafana_data:
