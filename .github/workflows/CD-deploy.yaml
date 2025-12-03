@@ -1,4 +1,4 @@
-name: Train Face Embedding Model
+name: Deploy API to Production
 
 on: [push, pull_request]
 
@@ -32,8 +32,12 @@ jobs:
         
         # Simple download without retry logic
         dvc pull models/face_embedding/mobilenetv2_arcface_model.pth || echo "No pretrained model found"
-        dvc pull data/processed/face_embedding/ || echo "Data download failed"
-        
+        dvc pull models/age_gender/age_model.pt || echo "No pretrained model found"
+        dvc pull models/age_gender/gender_model.pt || echo "No pretrained model found"
+        dvc pull models/emotion_classification/best_model.pth || echo "No pretrained model found"
+        dvc pull models/fake_classification/model_best.pth || echo "No pretrained model found"
+
+
         echo "✅ Download completed"
     
     - name: Train model
@@ -43,7 +47,7 @@ jobs:
         import yaml
         with open('pipelines/face_embedding/params.yaml') as f:
             p = yaml.safe_load(f)
-        p['training']['epochs'] = 50
+        p['training']['epochs'] = 1
         p['training']['device'] = 'cpu'
         p['training']['batch_size'] = 4  # Smaller batch for CD
         with open('pipelines/face_embedding/params.yaml', 'w') as f:
@@ -55,6 +59,7 @@ jobs:
         python -m mlops_xoxo.face_embedding.train_CD
     
     - name: Push trained model to DVC
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
         echo "📤 Pushing trained model to DVC..."
         
