@@ -22,7 +22,7 @@ import mlflow
 import mlflow.pytorch
 from dotenv import load_dotenv
 
-from mlops_xoxo.face_embedding.train_util import (
+from .train_util import (
     start_emissions_tracker,
     log_metrics_mlflow,
     log_params_mlflow,
@@ -70,11 +70,11 @@ LR = float(params["training"]["lr"])
 MARGIN = float(params["training"]["margin"])
 WEIGHT_DECAY = float(params["training"]["weight_decay"])
 
-DATA_DIR = "data/processed/face_embedding/train"
-VAL_DIR = "data/processed/face_embedding/val"
+DATA_DIR = Path(params["dataset"]["processed_dir"]) / "train"
+VAL_DIR = Path(params["dataset"]["processed_dir"]) / "val"
 
 model_dir, report_dir = prepare_output_dirs("face_embedding")
-EMISSIONS_OUTPUT_PATH = "reports/face_embedding/emissions.csv"
+EMISSIONS_OUTPUT_PATH = report_dir / "emissions.csv"
 
 
 # ============================================================
@@ -226,12 +226,12 @@ def train_model(run_id=None):
         mlflow.log_param("best_epoch", best_epoch)
 
         # Log emissions data
-        #try:
-        #    df = pd.read_csv(EMISSIONS_OUTPUT_PATH).tail(1)
-        #    mlflow.log_metric("carbon_emissions_kg", df["emissions"].iloc[0])
-        #    mlflow.log_metric("energy_kwh", df["energy_consumed"].iloc[0])
-        #except Exception as e:
-        #    print(f"⚠️ Emission log failed: {e}")
+        try:
+            df = pd.read_csv(EMISSIONS_OUTPUT_PATH).tail(1)
+            mlflow.log_metric("carbon_emissions_kg", df["emissions"].iloc[0])
+            mlflow.log_metric("energy_kwh", df["energy_consumed"].iloc[0])
+        except Exception as e:
+            print(f"⚠️ Emission log failed: {e}")
 
     # Save and register model
     model_path = model_dir / "mobilenetv2_arcface_model.pth"
@@ -239,7 +239,7 @@ def train_model(run_id=None):
     mlflow.log_artifact(str(model_path))
     mlflow.pytorch.log_model(model, artifact_path="pytorch_model", registered_model_name="mobilenetv2_arcface_model")
 
-    print(f" Training complete. Best val acc = {best_val_acc:.4f}")
+    print(f"✅ Training complete. Best val acc = {best_val_acc:.4f}")
 
 
 # ============================================================

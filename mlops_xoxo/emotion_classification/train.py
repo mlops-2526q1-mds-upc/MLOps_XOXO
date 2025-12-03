@@ -22,7 +22,7 @@ from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classifi
 from torchvision.models import resnet18, ResNet18_Weights
 
 import mlflow
-from train_util import (
+from .train_util import (
     prepare_output_dirs,
     init_mlflow,
     log_params_mlflow,

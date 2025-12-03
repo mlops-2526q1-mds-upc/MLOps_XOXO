@@ -41,3 +41,6 @@ jobs:
         
         docker push ${{ secrets.DOCKER_USERNAME }}/xoface-api:${{ github.sha }}
         docker push ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
+
+
+#checking CD 

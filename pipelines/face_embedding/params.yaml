@@ -7,9 +7,9 @@ dataset:
     train: 0.7
     val: 0.15
 mlflow:
-  experiment_id: '632907397142079313'
+  experiment_id: '4'
   experiment_name: face_embedding
-  run_id: 228505ce12ad46e6afb4249f455d52a2
+  run_id: a84ab89c125d45488099a996c315c03b
   run_name: face_embedding_4_epochs
   tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
 preprocessing:
@@ -20,9 +20,9 @@ storage:
   dvc_remote: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.dvc
 training:
   batch_size: 64
-  device: cpu
+  device: mps
   embedding_size: 512
-  epochs: 1
+  epochs: 4
   lr: 0.0001
   margin: 0.2
   weight_decay: 0.0001

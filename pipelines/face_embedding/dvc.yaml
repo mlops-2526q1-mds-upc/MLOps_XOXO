@@ -1,12 +1,12 @@
 stages:
   ingest:
     wdir: ../..
-    cmd: python -m mlops_xoxo.face_embedding.data_ingest
+    cmd: python mlops_xoxo/face_embedding/data_ingest.py
     deps:
       - mlops_xoxo/face_embedding/data_ingest.py
-      - data/external/casioface/train.rec
-      - data/external/casioface/train.idx
-      - data/external/casioface/train.lst
+      - data/external/face_embedding/casioface/train.rec
+      - data/external/face_embedding/casioface/train.idx
+      - data/external/face_embedding/casioface/train.lst
     outs:
       - data/raw/face_embedding
 
@@ -21,7 +21,7 @@ stages:
 
   split:
     wdir: ../..
-    cmd: python -m mlops_xoxo.face_embedding.data_split
+    cmd: python mlops_xoxo/face_embedding/data_split.py
     deps:
       - mlops_xoxo/face_embedding/data_split.py
       - data/raw/face_embedding
@@ -30,7 +30,7 @@ stages:
 
   train:
     wdir: ../..
-    cmd: python -m mlops_xoxo.face_embedding.train > mlflow_run_id.txt
+    cmd: python mlops_xoxo/face_embedding/train.py > mlflow_run_id.txt
     deps:
       - mlops_xoxo/face_embedding/train.py
       - data/processed/face_embedding/train
@@ -43,7 +43,7 @@ stages:
 
   eval:
     wdir: ../..
-    cmd: python -m mlops_xoxo.face_embedding.eval
+    cmd: python mlops_xoxo/face_embedding/eval.py
     deps:
       - mlops_xoxo/face_embedding/eval.py
       - models/face_embedding
