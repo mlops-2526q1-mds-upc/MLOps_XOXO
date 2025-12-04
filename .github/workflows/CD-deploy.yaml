@@ -9,35 +9,70 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Quick validation
       run: |
         echo "🧪 Validating project structure..."
         # Check essential files exist
         ls -la docker/Dockerfile docker-compose.yml api/api.py
         echo "✅ Project structure OK"
-
   deploy:
     runs-on: ubuntu-latest
     needs: test
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Docker login
       run: |
         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
     
     - name: Build Docker image
       run: docker build -f docker/Dockerfile -t xoface-api .
-    
+
     - name: Tag and push
       run: |
         docker tag xoface-api ${{ secrets.DOCKER_USERNAME }}/xoface-api:${{ github.sha }}
         docker tag xoface-api ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
-        
+
         docker push ${{ secrets.DOCKER_USERNAME }}/xoface-api:${{ github.sha }}
         docker push ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
+
+  deploy-to-vm:
+    runs-on: self-hosted
+    needs: deploy
+
+    steps:
+    - name: Docker login
+      run: |
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+    - name: Pull latest image from Docker Hub
+      run: |
+        echo "Pulling latest image from Docker Hub..."
+        docker pull ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
+    - name: Stop and remove old container
+      run: |
+        echo "Stopping and removing old container..."
+        docker stop xoface-api 2>/dev/null || true
+        docker rm xoface-api 2>/dev/null || true
+    - name: Start new container
+      run: |
+        echo "Starting new container..."
+        docker run -d \
+          --name xoface-api \
+          -p 8000:8000 \
+          --restart unless-stopped \
+          ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
+    - name: Verify container is running
+      run: |
+        echo "Verifying container is running..."
+        docker ps | grep xoface-api
+    - name: Clean up old images
+      run: |
+        echo "Cleaning up old images..."
+        docker image prune -f
+    - name: Deployment completed
+      run: echo "Deployment completed successfully!"
