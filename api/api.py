@@ -45,7 +45,7 @@ FACE_EMB = os.path.join(ROOT, "mlops_xoxo", "face_embedding")
 
 sys.path.append(ROOT)
 sys.path.append(FACE_EMB)
-from mlops_xoxo.face_embedding.train import MobileFace
+from mlops_xoxo.utils.models import MobileFace
 
 EMBEDDING_MODEL_PATH = project_root / "models/face_embedding/mobilenetv2_arcface_model.pth" 
 embedding_model = MobileFace(emb_size=512).to(DEVICE) 
@@ -83,7 +83,7 @@ age_gender_transform = transforms.Compose([
 ])
 
 try:
-    from mlops_xoxo.age_gender.train import SimpleModel
+    from mlops_xoxo.utils.models import SimpleModel
 
     if AGE_MODEL_PATH.exists():
         age_model = SimpleModel(num_outputs=1).to(DEVICE) 
@@ -118,7 +118,7 @@ emotion_transform = transforms.Compose([
 EMOTION_CLASSES = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 
 try:
-    from mlops_xoxo.emotion_classification.train import build_resnet18
+    from mlops_xoxo.utils.models import build_resnet18
     
     EMOTION_PATH = project_root / "models/emotion_classification/best_model.pth"
     
@@ -156,7 +156,7 @@ auth_transform = transforms.Compose([
 ])
 
 try:
-    from mlops_xoxo.fake_classification.train import build_model
+    from mlops_xoxo.utils.models import build_model
     
     AUTH_PATH = project_root / "models/fake_classification/model_best.pth"
     
