@@ -39,7 +39,6 @@ stages:
           - training
     outs:
       - models/face_embedding
-      - reports/face_embedding/emissions.csv
 
   eval:
     wdir: ../..
@@ -49,6 +48,3 @@ stages:
       - models/face_embedding
       - data/processed/face_embedding/val
       - pipelines/face_embedding/params.yaml
-    outs:
-      - reports/face_embedding/eval_predictions.json
-      - reports/face_embedding/eval_summary.txt

@@ -43,7 +43,7 @@ jobs:
         import yaml
         with open('pipelines/face_embedding/params.yaml') as f:
             p = yaml.safe_load(f)
-        p['training']['epochs'] = 20
+        p['training']['epochs'] = 1
         p['training']['device'] = 'cpu'
         p['training']['batch_size'] = 4  # Smaller batch for CD
         with open('pipelines/face_embedding/params.yaml', 'w') as f:
