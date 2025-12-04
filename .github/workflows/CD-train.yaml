@@ -61,9 +61,14 @@ jobs:
         # Check if model was created
         if [ -f "models/face_embedding/mobilenetv2_arcface_model.pth" ]; then
           echo "Model file exists, pushing to DVC..."
-          dvc add models/face_embedding/mobilenetv2_arcface_model.pth --force
+          
+          # For pipeline outputs, use dvc commit to update the tracked file
+          dvc commit pipelines/face_embedding/dvc.yaml:train --force
+          
+          # Push the updated file to remote storage
           dvc push models/face_embedding/mobilenetv2_arcface_model.pth
           echo "✅ Model pushed to DVC"
         else
           echo "❌ No model file found to push"
+          exit 1
         fi
