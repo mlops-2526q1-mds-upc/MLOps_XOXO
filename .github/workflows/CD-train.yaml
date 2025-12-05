@@ -57,15 +57,15 @@ jobs:
     - name: Push trained model to DVC
       run: |
         echo "📤 Pushing trained model to DVC..."
-        
+
         # Check if model was created
         if [ -f "models/face_embedding/mobilenetv2_arcface_model.pth" ]; then
           echo "Model file exists, pushing to DVC..."
-          
-          # For pipeline outputs, use dvc commit to update the tracked file
-          dvc commit pipelines/face_embedding/dvc.yaml:train --force
-          
-          # Push the updated file to remote storage
+
+          # Add the model file to DVC (creates/updates .dvc file)
+          dvc add models/face_embedding/mobilenetv2_arcface_model.pth || echo "⚠️ Model already tracked"
+
+          # Push the model to remote storage
           dvc push models/face_embedding/mobilenetv2_arcface_model.pth
           echo "✅ Model pushed to DVC"
         else
