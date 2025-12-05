@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+    env_file:
+    - .env
     container_name: xoface-api
     ports:
       - "8000:8000"
@@ -12,8 +14,8 @@ services:
     environment:
       - PYTHONPATH=/app
       - DEVICE=cpu
-      - DVC_USER=pawarit.jamjod
-      - DVC_PASSWORD=5718b4a81a27588ff3ab03b1ed799041eff3eb21
+      - DVC_USER=${DVC_USER:-}
+      - DVC_PASSWORD=${DVC_PASSWORD:-}
     command: python api/api.py
 
   ui:
