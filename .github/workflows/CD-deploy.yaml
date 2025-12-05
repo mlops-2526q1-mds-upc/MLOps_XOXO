@@ -17,7 +17,7 @@ jobs:
       run: |
         echo "🧪 Validating project structure..."
         # Check essential files exist
-        ls -la docker/Dockerfile docker-compose.yml api/api.py
+        ls -la docker/Dockerfile.api docker-compose.yml api/api.py
         echo "✅ Project structure OK"
   deploy:
     runs-on: ubuntu-latest
@@ -30,13 +30,13 @@ jobs:
       run: |
         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
     
-    - name: Build Docker image
-      run: docker build -f docker/Dockerfile -t xoface-api .
+    - name: Build Docker image with docker-compose
+      run: docker-compose build api
 
     - name: Tag and push
       run: |
-        docker tag xoface-api ${{ secrets.DOCKER_USERNAME }}/xoface-api:${{ github.sha }}
-        docker tag xoface-api ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
+        docker tag mlops_xoxo-api ${{ secrets.DOCKER_USERNAME }}/xoface-api:${{ github.sha }}
+        docker tag mlops_xoxo-api ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
 
         docker push ${{ secrets.DOCKER_USERNAME }}/xoface-api:${{ github.sha }}
         docker push ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
@@ -73,6 +73,11 @@ jobs:
         docker run -d \
             --name xoface-api \
             -p 8000:8000 \
+            -v xoface-models:/app/models \
+            -v xoface-dvc-config:/app/.dvc \
+            -v ~/.xoface-dvc/config.local:/app/.dvc/config.local:ro \
+            -e PYTHONPATH=/app \
+            -e DEVICE=cpu \
             --restart unless-stopped \
             ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
 
