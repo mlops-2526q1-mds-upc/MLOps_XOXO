@@ -31,7 +31,7 @@ jobs:
         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
     
     - name: Build Docker image with docker-compose
-      run: docker-compose build api
+      run: docker compose build api
 
     - name: Tag and push
       run: |
