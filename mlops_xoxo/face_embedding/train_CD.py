@@ -137,12 +137,12 @@ def train_model():
     NUM_CLASSES = len(train_ds.classes)
     model = MobileFace(emb_size=512).to(DEVICE)
     arcface = ArcFaceHead(emb_size=512, num_classes=NUM_CLASSES, margin=MARGIN).to(DEVICE)
-    optimizer = torch.optim.Adam(list(model.parameters()) + list(arcface.parameters()),
+    optimizer = torch.optim.Adam(list(model.parameters()) + list(arcface.parameters()), 
                                  lr=LR, weight_decay=WEIGHT_DECAY)
     criterion = torch.nn.CrossEntropyLoss()
 
     best_val_acc, best_val_loss, best_epoch = 0.0, float("inf"), 0
-
+    
     for epoch in range(EPOCHS):
         model.train()
         total_loss = 0.0
@@ -157,7 +157,7 @@ def train_model():
             total_loss += loss.item()
 
         avg_loss = total_loss / len(train_loader)
-
+        
         # Validation
         model.eval()
         val_loss, correct, total = 0.0, 0, 0
@@ -171,12 +171,12 @@ def train_model():
                 preds = torch.argmax(logits, dim=1)
                 correct += (preds == labels).sum().item()
                 total += labels.size(0)
-
+        
         val_loss /= len(val_loader)
         val_acc = correct / total
-
+        
         print(f"Epoch {epoch}: train_loss={avg_loss:.4f} | val_loss={val_loss:.4f} | val_acc={val_acc:.4f}")
-
+        
         if val_acc > best_val_acc:
             best_val_acc, best_val_loss, best_epoch = val_acc, val_loss, epoch
             # Save best model

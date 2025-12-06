@@ -43,33 +43,13 @@ def save_config(config: Dict[str, Any], save_path: str | Path):
 # ⚙️ DEVICE + SEED SETUP
 # ============================================================
 
-def get_device() -> torch.device:
-    """
-    Priority:
-      1. FORCE_DEVICE env var (if set)
-      2. CUDA if available
-      3. MPS if built & available (macOS Metal)
-      4. CPU
-    """
-    # 1) explicit override from CI / env
-    force = os.getenv("FORCE_DEVICE")
-    if force:
-        print(f"Using device (forced): {force}")
-        return torch.device(force)
-
-    # 2) CUDA
-    if torch.cuda.is_available():
-        print("Using device: cuda")
+def get_device(device_str: str = "cuda") -> torch.device:
+    """Get the appropriate torch.device based on user preference."""
+    device_str = device_str.lower()
+    if device_str == "cuda" and torch.cuda.is_available():
         return torch.device("cuda")
-
-    # 3) MPS (only if backend exists, is built AND available)
-    if hasattr(torch.backends, "mps"):
-        if torch.backends.mps.is_built() and torch.backends.mps.is_available():
-            print("Using device: mps")
-            return torch.device("mps")
-
-    # 4) Fallback to CPU
-    print("Using device: cpu")
+    if device_str == "mps" and getattr(torch.backends, "mps", None) is not None:
+        return torch.device("mps")
     return torch.device("cpu")
 
 

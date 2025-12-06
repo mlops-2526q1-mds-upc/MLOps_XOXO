@@ -28,7 +28,13 @@ if mlflow_username and mlflow_password:
 run_name = params['mlflow'].get('run_name', 'default_run')
 
 # Device setup
-DEVICE = torch.device('cpu')
+DEVICE = torch.device('mps') if getattr(torch.backends, 'mps', None) else torch.device('cpu')
+if torch.cuda.is_available():
+    DEVICE = torch.device('cuda')
+    print("Using device: CUDA")
+else:
+    DEVICE = torch.device('cpu')
+    print("Using device: CPU")
 print("Using device:", DEVICE)
 
 # Load model
