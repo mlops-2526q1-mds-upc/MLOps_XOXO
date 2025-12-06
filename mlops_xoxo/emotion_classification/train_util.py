@@ -69,23 +69,33 @@ def log_metrics_mlflow(metrics: Dict[str, float], step: Optional[int] = None):
             pass
 
 
-def get_device(device_str: str = "cuda") -> torch.device:
-    device_str = device_str.lower().strip()
-    
-    # Handle various GPU names (cuda, gpu, nvidia)
-    if device_str in ("cuda", "gpu", "nvidia") and torch.cuda.is_available():
-        print(f"  → CUDA/GPU available: {torch.cuda.get_device_name(0)}")
+def get_device() -> torch.device:
+    """
+    Priority:
+      1. FORCE_DEVICE env var (if set)
+      2. CUDA if available
+      3. MPS if built & available (macOS Metal)
+      4. CPU
+    """
+    # 1) explicit override from CI / env
+    force = os.getenv("FORCE_DEVICE")
+    if force:
+        print(f"Using device (forced): {force}")
+        return torch.device(force)
+
+    # 2) CUDA
+    if torch.cuda.is_available():
+        print("Using device: cuda")
         return torch.device("cuda")
-    
-    # Handle Apple Silicon
-    if device_str == "mps" and getattr(torch.backends, "mps", None) is not None:
-        print(f"  → Apple MPS (Metal Performance Shaders) available")
-        return torch.device("mps")
-    
-    # Fall back to CPU with warning if GPU was requested but not available
-    if device_str in ("cuda", "gpu", "nvidia"):
-        print(f"  ⚠ GPU requested but not available, falling back to CPU")
-    
+
+    # 3) MPS (only if backend exists, is built AND available)
+    if hasattr(torch.backends, "mps"):
+        if torch.backends.mps.is_built() and torch.backends.mps.is_available():
+            print("Using device: mps")
+            return torch.device("mps")
+
+    # 4) Fallback to CPU
+    print("Using device: cpu")
     return torch.device("cpu")
 
 

@@ -1,0 +1,248 @@
+name: Combined CI and DVC Tests
+
+on: [push, pull_request]
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install black flake8 bandit
+
+      - name: Check code formatting with Black (non-blocking)
+        run: |
+          echo "🔍 Checking code formatting with Black..."
+          if black --check .; then
+            echo "✅ All code is properly formatted!"
+          else
+            echo "⚠️ Code formatting issues found - please run 'black .' locally to fix"
+            echo "📝 Black would reformat the following files:"
+            black --check . --verbose || true
+          fi
+
+      - name: Lint with flake8 (non-blocking)
+        run: |
+          echo "🔍 Running flake8 linting..."
+          flake8 . --count --max-complexity=10 --statistics --exit-zero || echo "⚠️ Flake8 found linting issues"
+
+      - name: Security scan with bandit (non-blocking)
+        run: |
+          echo "🔒 Running security scan with bandit..."
+          bandit -r . -f html -o bandit_report.html -ll || echo "⚠️ Bandit found potential security issues"
+
+  dvc-consistency:
+    name: DVC Pipeline Consistency
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install DVC
+        run: pip install dvc
+
+      - name: Validate DVC files
+        run: |
+          echo "📋 Validating DVC YAML files..."
+          find . -name "dvc.yaml" -exec echo "Validating {}" \; -exec dvc status --all {} \;
+          
+          echo "🔍 Checking for DVC file syntax issues..."
+          find . -name "dvc.yaml" -exec python -c "import yaml; yaml.safe_load(open('{}'))" \; && echo "✅ All DVC YAML files are valid"
+
+  test-dvc-connection:
+    name: Test DVC Connection
+    runs-on: ubuntu-latest
+    needs: [code-quality, dvc-consistency]  # Wait for quality checks first
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'  # Keep 3.9 for DVC connection test only
+
+    - name: Install DVC and dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install dvc dvc-http
+
+    - name: Configure DVC remote (modify only)
+      env:
+        DAGSHUB_DVC_USER: ${{ secrets.DAGSHUB_DVC_USER }}
+        DAGSHUB_DVC_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
+      run: |
+        echo "Current DVC remotes:"
+        dvc remote list
+        echo "Modifying existing remote..."
+        dvc remote modify origin auth basic
+        dvc remote modify origin user "$DAGSHUB_DVC_USER"
+        dvc remote modify origin password "$DAGSHUB_DVC_PASS"
+        echo "Updated remote configuration:"
+        dvc remote list
+
+    - name: Test connection with remote list
+      run: |
+        echo "📡 Testing DVC remote configuration..."
+        dvc remote list
+        echo "✅ DVC remote configured successfully"
+
+    - name: Test with DVC doctor
+      run: |
+        echo "🏥 Running DVC doctor to check configuration..."
+        dvc doctor
+        echo "✅ DVC system check completed"
+
+  simple-ci-test:
+    name: Simple CI Test
+    runs-on: ubuntu-latest
+    needs: [code-quality, dvc-consistency]  # Wait for quality checks first
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Verify imports work
+        run: |
+          python -c "
+          try:
+              import torch
+              import mlflow
+              import dvc
+              print('✓ All key dependencies imported successfully')
+              print(f'  - PyTorch version: {torch.__version__}')
+              print(f'  - MLflow version: {mlflow.__version__}')
+              print(f'  - DVC version: {dvc.__version__}')
+          except ImportError as e:
+              print(f'✗ Dependency import failed: {e}')
+              exit(1)
+          except Exception as e:
+              print(f'✗ Unexpected error: {e}')
+              exit(1)
+          "
+
+  test-face-embedding:
+    name: Run Face Embedding Tests
+    runs-on: ubuntu-latest
+    needs: test-dvc-connection
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install project and test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install dvc dvc-http pytest pytest-cov
+
+    - name: Configure DVC remote
+      env:
+        DAGSHUB_DVC_USER: ${{ secrets.DAGSHUB_DVC_USER }}
+        DAGSHUB_DVC_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
+      run: |
+        dvc remote modify origin auth basic
+        dvc remote modify origin user "$DAGSHUB_DVC_USER"
+        dvc remote modify origin password "$DAGSHUB_DVC_PASS"
+
+    - name: Download face embedding models with retry
+      run: |
+        echo "📥 Downloading face embedding models with retry logic..."
+        
+        # Function to download with retries
+        download_with_retry() {
+          local file=$1
+          local max_attempts=3
+          local attempt=1
+          
+          while [ $attempt -le $max_attempts ]; do
+            echo "Attempt $attempt to download: $file"
+            if dvc pull "$file"; then
+              echo "✅ Successfully downloaded: $file"
+              return 0
+            else
+              echo "⚠️ Attempt $attempt failed for: $file"
+              if [ $attempt -eq $max_attempts ]; then
+                echo "❌ All attempts failed for: $file"
+                return 1
+              fi
+              echo "🔄 Retrying in 5 seconds..."
+              sleep 5
+              ((attempt++))
+            fi
+          done
+        }
+        
+        # Download models with retry logic
+        download_with_retry "models/face_embedding/mobilenetv2_arcface_model.pth"
+        download_with_retry "data/processed/face_embedding/" || echo "⚠️ Data download failed, continuing with tests..."
+        
+        echo "✅ Download attempts completed"
+
+    - name: Verify downloaded models
+      run: |
+        echo "🔍 Verifying downloaded model files..."
+        
+        # Check if at least the model file exists
+        if [ -f "models/face_embedding/mobilenetv2_arcface_model.pth" ]; then
+          size=$(du -h "models/face_embedding/mobilenetv2_arcface_model.pth" | cut -f1)
+          echo "✅ Face embedding model: $size"
+        else
+          echo "❌ Face embedding model missing - cannot run tests"
+          exit 1
+        fi
+        
+        # Data is optional for basic tests
+        if [ -d "data/processed/face_embedding" ]; then
+          file_count=$(find "data/processed/face_embedding" -type f 2>/dev/null | wc -l)
+          echo "✅ Face embedding data: $file_count files"
+        else
+          echo "⚠️ Face embedding data not available (some tests may be skipped)"
+        fi
+
+    - name: Run face embedding tests (skip if data missing)
+      run: |
+        echo "🧪 Running face embedding tests..."
+        
+        if [ -f "models/face_embedding/mobilenetv2_arcface_model.pth" ]; then
+          # Run tests - they should handle missing data gracefully
+          pytest test_face_embedding/ -v --cov=mlops_xoxo.face_embedding -x
+        else
+          echo "❌ Cannot run tests - model file missing"
+          exit 1
+        fi

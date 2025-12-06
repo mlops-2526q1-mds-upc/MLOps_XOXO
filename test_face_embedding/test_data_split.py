@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 import json
 
-DATA_SPLIT_SCRIPT_PATH = "mlops_xoxo.data_split"
+DATA_SPLIT_SCRIPT_PATH = "mlops_xoxo.face_embedding.data_split"
 
 @pytest.fixture
 def fake_raw_data(tmp_path):
@@ -30,7 +30,7 @@ def test_data_split_workflow(mocker, tmp_path, fake_raw_data):
     mocker.patch(f"{DATA_SPLIT_SCRIPT_PATH}.OUTPUT_DIR", output_dir)
     mocker.patch(f"{DATA_SPLIT_SCRIPT_PATH}.MANIFEST_PATH", manifest_path)
     
-    from mlops_xoxo import data_split
+    from mlops_xoxo.face_embedding import data_split
 
     # Run the main function of the script
     data_split.split_data()

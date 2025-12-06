@@ -1,7 +1,7 @@
 
 from unittest.mock import patch
 
-DATA_INGEST_SCRIPT_PATH = "mlops_xoxo.data_ingest"
+DATA_INGEST_SCRIPT_PATH = "mlops_xoxo.face_embedding.data_ingest"
 
 def test_main_calls_rec_to_images_correctly():
     """
@@ -10,11 +10,11 @@ def test_main_calls_rec_to_images_correctly():
     """
     # We mock the utility function that the script calls
     # This isolates our test to only the logic within data_ingest.py
-    mock_target = 'mlops_xoxo.utils.data_utils.rec_to_images'
+    mock_target = 'mlops_xoxo.face_embedding.utils.data_utils.rec_to_images'
     
     with patch(mock_target) as mock_rec_to_images:
         
-        from mlops_xoxo import data_ingest
+        from mlops_xoxo.face_embedding import data_ingest
         
         data_ingest.main()
         
@@ -26,7 +26,7 @@ def test_main_calls_rec_to_images_correctly():
             "data/external/casioface/train.rec",
             "data/external/casioface/train.idx",
             "data/external/casioface/train.lst",
-            "data/raw",
+            "data/raw/face_embedding",
             limit=10000,
             show_progress=True
         )
