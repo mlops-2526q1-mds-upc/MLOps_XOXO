@@ -22,9 +22,9 @@ stages:
     deps:
     - path: data/raw/emotion_classification
       hash: md5
-      md5: 1d1e54eb0322b7cbc99161b4f0090ade.dir
-      size: 62409633
-      nfiles: 35891
+      md5: 63f3448b879563daf6c429450b05820e.dir
+      size: 62415781
+      nfiles: 35892
     - path: mlops_xoxo/emotion_classification/data_split.py
       hash: md5
       md5: 331e7b7a1fadb78be49798f6e55a1063
@@ -40,9 +40,9 @@ stages:
     deps:
     - path: data/raw/emotion_classification
       hash: md5
-      md5: 1d1e54eb0322b7cbc99161b4f0090ade.dir
-      size: 62409633
-      nfiles: 35891
+      md5: 63f3448b879563daf6c429450b05820e.dir
+      size: 62415781
+      nfiles: 35892
     - path: mlops_xoxo/emotion_classification/data_validate.py
       hash: md5
       md5: 4bdd062bd9c3ebb98c760b4340cef732
