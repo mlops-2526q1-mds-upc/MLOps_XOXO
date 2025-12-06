@@ -3,8 +3,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
+    image: mathys242/xoface-api:latest
     env_file:
-    - .env
+      - .env
     container_name: xoface-api
     ports:
       - "8000:8000"
