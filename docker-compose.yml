@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
-    image: mathys242/xoface-api:latest
+    image: xoface-api
     env_file:
       - .env
     container_name: xoface-api
