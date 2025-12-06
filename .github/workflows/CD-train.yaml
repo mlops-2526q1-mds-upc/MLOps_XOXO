@@ -1,0 +1,74 @@
+name: Train Face Embedding Model
+
+on: [push, pull_request]
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    
+    - name: Install
+      run: |
+        pip install torch dvc dvc-http
+        pip install -e .
+    
+    - name: Setup DVC
+      env:
+        DAGSHUB_USER: ${{ secrets.DAGSHUB_DVC_USER }}
+        DAGSHUB_PASS: ${{ secrets.DAGSHUB_DVC_PASS }}
+      run: |
+        dvc remote modify origin auth basic
+        dvc remote modify origin user "$DAGSHUB_USER"
+        dvc remote modify origin password "$DAGSHUB_PASS"
+    
+    - name: Download face embedding data
+      run: |
+        echo "📥 Downloading face embedding data..."
+        
+        # Simple download without retry logic
+        dvc pull models/face_embedding/mobilenetv2_arcface_model.pth || echo "No pretrained model found"
+        dvc pull data/processed/face_embedding/ || echo "Data download failed"
+        
+        echo "✅ Download completed"
+    
+    - name: Train model
+      run: |
+        # Update params for CI
+        python -c "
+        import yaml
+        with open('pipelines/face_embedding/params.yaml') as f:
+            p = yaml.safe_load(f)
+        p['training']['epochs'] = 50
+        p['training']['device'] = 'cpu'
+        p['training']['batch_size'] = 4  # Smaller batch for CD
+        with open('pipelines/face_embedding/params.yaml', 'w') as f:
+            yaml.dump(p, f)
+        print('Training for 50 epochs')
+        "
+        
+        # Run training WITHOUT MLflow
+        python -m mlops_xoxo.face_embedding.train_CD
+    
+    - name: Push trained model to DVC
+      run: |
+        echo "📤 Pushing trained model to DVC..."
+
+        # Check if model was created
+        if [ -f "models/face_embedding/mobilenetv2_arcface_model.pth" ]; then
+          echo "Model file exists, pushing to DVC..."
+
+          # Add the model file to DVC (creates/updates .dvc file)
+          dvc add models/face_embedding/mobilenetv2_arcface_model.pth || echo "⚠️ Model already tracked"
+
+          # Push the model to remote storage
+          dvc push models/face_embedding/mobilenetv2_arcface_model.pth
+          echo "✅ Model pushed to DVC"
+        else
+          echo "❌ No model file found to push"
+          exit 1
+        fi
