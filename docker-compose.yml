@@ -13,6 +13,7 @@ services:
       - xoface-models:/app/models
       - xoface-dvc-config:/app/.dvc
       - ./.dvc/config.local:/app/.dvc/config.local:ro
+      - ./model_monitoring:/app/model_monitoring
     environment:
       - PYTHONPATH=/app
       - DEVICE=cpu
@@ -29,7 +30,7 @@ services:
       - "8501:8501"
     environment:
       - PYTHONPATH=/app
-      - FAST_API_URL=http://10.4.41.80:8000
+      - FAST_API_URL=http://api:8000
     command: streamlit run app.py --server.address=0.0.0.0 --server.port=8501
 
   prometheus:

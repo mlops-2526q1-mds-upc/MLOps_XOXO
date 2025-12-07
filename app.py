@@ -16,8 +16,8 @@ st.set_page_config(
 
 # Base URL of the running FastAPI
 # FAST_API_URL = "http://127.0.0.1:8000"
-#FAST_API_URL = os.getenv("FAST_API_URL", "http://127.0.0.1:8000")
-FAST_API_URL = os.getenv("FAST_API_URL", "http://10.4.41.80:8000")
+FAST_API_URL = os.getenv("FAST_API_URL", "http://127.0.0.1:8000")
+#FAST_API_URL = os.getenv("FAST_API_URL", "http://10.4.41.80:8000")
 
 
 # Page Title 
