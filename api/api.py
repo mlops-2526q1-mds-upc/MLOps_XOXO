@@ -7,15 +7,41 @@ from pathlib import Path
 import torch
 import yaml
 import numpy as np
+import csv
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from PIL import Image
 from torchvision import transforms
 from prometheus_fastapi_instrumentator import Instrumentator
+from datetime import datetime
 import torch.nn.functional as F
 import uvicorn
 
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
+
+# Define log file path for model monitoring
+LOG_FILE = Path("model_monitoring/prediction_logs.csv")
+LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+# Initialize log file with headers if it doesn't exist
+if not LOG_FILE.exists():
+    with open(LOG_FILE, "w", newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["timestamp", "model", "prediction", "confidence"])
+
+def log_prediction(model_name, prediction, confidence):
+    """ Logs a single prediction event to the CSV file for monitoring (Evidently). """
+    try:
+        with open(LOG_FILE, "a", newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                datetime.now().isoformat(),
+                model_name,
+                prediction,
+                confidence
+            ])
+    except Exception as e:
+        print(f"Logging failed: {e}")
 
 # --- Configuration & Model Loading ---
 
@@ -294,6 +320,10 @@ async def predict_age_gender(file: UploadFile = File(..., description="Image fil
 
     gender_probs = torch.softmax(gender_out.flatten(), dim=0)
     gender_confidence = gender_probs[gender_idx].item()
+
+    # Add logging for model monitoring (for Evidently)
+    log_prediction("age_model", round(age_out.item(), 1), 1.0) 
+    log_prediction("gender_model", gender_label, gender_confidence)
     
     return {
         "predicted_age": round(age_out.item(), 1),   # if age_out is scalar
@@ -315,9 +345,15 @@ async def predict_emotion(file: UploadFile = File(...)):
         probs = torch.softmax(logits, dim=1)
     
     pred_idx = torch.argmax(probs, dim=1).item()
+    emotion_label = EMOTION_CLASSES[pred_idx]
+    confidence = probs[0][pred_idx].item()
+
+    # Add logging for model monitoring (for Evidently)
+    log_prediction("emotion_model", emotion_label, confidence)
+
     return {
-        "emotion": EMOTION_CLASSES[pred_idx],
-        "confidence": probs[0][pred_idx].item()
+        "emotion": emotion_label,
+        "confidence": confidence
     }
 
 @app.post("/predict_authenticity", summary="Predict if the image is real or fake")
@@ -334,10 +370,14 @@ async def predict_authenticity(file: UploadFile = File(...)):
         
     pred_idx = torch.argmax(probs, dim=1).item()
     predicted_class = auth_classes[pred_idx]
+    confidence = probs[0][pred_idx].item()
+
+    # Add logging for model monitoring (for Evidently)
+    log_prediction("authenticity_model", predicted_class, confidence)
     
     return {
         "prediction": predicted_class,
-        "confidence": probs[0][pred_idx].item(),
+        "confidence": confidence,
         "is_fake": predicted_class.lower() == "fake"
     }
 
