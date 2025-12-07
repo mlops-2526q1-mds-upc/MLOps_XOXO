@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
 Train face embedding model with MobileNetV2 + ArcFaceHead.
-Logs experiments via MLflow and emissions via CodeCarbon.
+CI/CD version without MLflow tracking.
 """
 
 import os
 import random
 import numpy as np
-import pandas as pd
-from collections import defaultdict
 from pathlib import Path
 import yaml
 import torch
@@ -18,37 +16,12 @@ from torchvision import models, transforms
 from tqdm import tqdm
 from PIL import Image
 
-import mlflow
-import mlflow.pytorch
-from dotenv import load_dotenv
-
-from mlops_xoxo.face_embedding.train_util import (
-    start_emissions_tracker,
-    log_metrics_mlflow,
-    log_params_mlflow,
-    prepare_output_dirs,
-)
-
 # ============================================================
 # CONFIG + ENV SETUP
 # ============================================================
 
 with open("pipelines/face_embedding/params.yaml", encoding="utf-8") as f:
     params = yaml.safe_load(f)
-
-# --- Load environment variables for remote MLflow ---
-load_dotenv()
-mlflow_uri = os.getenv("MLFLOW_TRACKING_URI")
-if mlflow_uri:
-    mlflow.set_tracking_uri(mlflow_uri)
-
-mlflow_username = os.getenv("MLFLOW_TRACKING_USERNAME")
-mlflow_password = os.getenv("MLFLOW_TRACKING_PASSWORD")
-if mlflow_username and mlflow_password:
-    os.environ["MLFLOW_TRACKING_USERNAME"] = mlflow_username
-    os.environ["MLFLOW_TRACKING_PASSWORD"] = mlflow_password
-
-run_name = params["mlflow"].get("run_name", "default_run")
 
 # --- Device setup (CUDA / MPS / CPU) ---
 device_param = params["training"]["device"].lower()
@@ -73,9 +46,9 @@ WEIGHT_DECAY = float(params["training"]["weight_decay"])
 DATA_DIR = "data/processed/face_embedding/train"
 VAL_DIR = "data/processed/face_embedding/val"
 
-model_dir, report_dir = prepare_output_dirs("face_embedding")
-EMISSIONS_OUTPUT_PATH = "reports/face_embedding/emissions.csv"
-
+# Create model directory
+model_dir = Path("models/face_embedding")
+model_dir.mkdir(parents=True, exist_ok=True)
 
 # ============================================================
 # DATASET
@@ -117,7 +90,6 @@ train_loader = DataLoader(train_ds, batch_size=BATCH, shuffle=True, num_workers=
 val_ds = FaceDataset(VAL_DIR, transform=transform)
 val_loader = DataLoader(val_ds, batch_size=BATCH, shuffle=False, num_workers=0)
 print(f"Loaded {len(train_ds.classes)} classes from dataset.")
-
 
 # ============================================================
 # MODEL
@@ -161,111 +133,63 @@ class ArcFaceHead(torch.nn.Module):
 # TRAIN FUNCTION
 # ============================================================
 
-def train_model(run_id=None):
+def train_model():
     NUM_CLASSES = len(train_ds.classes)
     model = MobileFace(emb_size=512).to(DEVICE)
     arcface = ArcFaceHead(emb_size=512, num_classes=NUM_CLASSES, margin=MARGIN).to(DEVICE)
-    optimizer = torch.optim.Adam(list(model.parameters()) + list(arcface.parameters()), lr=LR, weight_decay=WEIGHT_DECAY)
+    optimizer = torch.optim.Adam(list(model.parameters()) + list(arcface.parameters()), 
+                                 lr=LR, weight_decay=WEIGHT_DECAY)
     criterion = torch.nn.CrossEntropyLoss()
 
-    log_params_mlflow({
-        "batch_size": BATCH,
-        "epochs": EPOCHS,
-        "lr": LR,
-        "margin": MARGIN,
-        "weight_decay": WEIGHT_DECAY,
-        "num_classes": NUM_CLASSES,
-        "device": str(DEVICE),
-    })
-
     best_val_acc, best_val_loss, best_epoch = 0.0, float("inf"), 0
-    print("\nStarting CodeCarbon Emissions Tracker...")
+    
+    for epoch in range(EPOCHS):
+        model.train()
+        total_loss = 0.0
+        for images, labels in tqdm(train_loader, desc=f"Epoch {epoch}"):
+            images, labels = images.to(DEVICE), labels.to(DEVICE)
+            emb = model(images)
+            logits = arcface(emb, labels)
+            loss = criterion(logits, labels)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
 
-    with start_emissions_tracker("face_embedding", report_dir):
-        for epoch in range(EPOCHS):
-            model.train()
-            total_loss = 0.0
-            for images, labels in tqdm(train_loader, desc=f"Epoch {epoch}"):
+        avg_loss = total_loss / len(train_loader)
+        
+        # Validation
+        model.eval()
+        val_loss, correct, total = 0.0, 0, 0
+        with torch.no_grad():
+            for images, labels in val_loader:
                 images, labels = images.to(DEVICE), labels.to(DEVICE)
                 emb = model(images)
                 logits = arcface(emb, labels)
                 loss = criterion(logits, labels)
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                total_loss += loss.item()
+                val_loss += loss.item()
+                preds = torch.argmax(logits, dim=1)
+                correct += (preds == labels).sum().item()
+                total += labels.size(0)
+        
+        val_loss /= len(val_loader)
+        val_acc = correct / total
+        
+        print(f"Epoch {epoch}: train_loss={avg_loss:.4f} | val_loss={val_loss:.4f} | val_acc={val_acc:.4f}")
+        
+        if val_acc > best_val_acc:
+            best_val_acc, best_val_loss, best_epoch = val_acc, val_loss, epoch
+            # Save best model
+            model_path = model_dir / "mobilenetv2_arcface_model.pth"
+            torch.save(model.state_dict(), model_path)
+            print(f"  ✓ Saved best model to {model_path}")
 
-            avg_loss = total_loss / len(train_loader)
-            model.eval()
-            val_loss, correct, total = 0.0, 0, 0
-            with torch.no_grad():
-                for images, labels in val_loader:
-                    images, labels = images.to(DEVICE), labels.to(DEVICE)
-                    emb = model(images)
-                    logits = arcface(emb, labels)
-                    loss = criterion(logits, labels)
-                    val_loss += loss.item()
-                    preds = torch.argmax(logits, dim=1)
-                    correct += (preds == labels).sum().item()
-                    total += labels.size(0)
-            val_loss /= len(val_loader)
-            val_acc = correct / total
-            log_metrics_mlflow({"train_loss": avg_loss, "val_loss": val_loss, "val_accuracy": val_acc}, step=epoch)
-
-            print(f"Epoch {epoch}: train_loss={avg_loss:.4f} | val_loss={val_loss:.4f} | val_acc={val_acc:.4f}")
-            if val_acc > best_val_acc:
-                best_val_acc, best_val_loss, best_epoch = val_acc, val_loss, epoch
-
-        # Final metrics
-        mlflow.log_metrics({
-            "final_train_loss": avg_loss,
-            "final_val_loss": val_loss,
-            "final_val_accuracy": val_acc,
-            "best_val_accuracy": best_val_acc,
-        })
-        mlflow.log_param("best_epoch", best_epoch)
-
-        # Log emissions data
-        #try:
-        #    df = pd.read_csv(EMISSIONS_OUTPUT_PATH).tail(1)
-        #    mlflow.log_metric("carbon_emissions_kg", df["emissions"].iloc[0])
-        #    mlflow.log_metric("energy_kwh", df["energy_consumed"].iloc[0])
-        #except Exception as e:
-        #    print(f"⚠️ Emission log failed: {e}")
-
-    # Save and register model
-    model_path = model_dir / "mobilenetv2_arcface_model.pth"
-    torch.save(model.state_dict(), model_path)
-    mlflow.log_artifact(str(model_path))
-    mlflow.pytorch.log_model(model, artifact_path="pytorch_model", registered_model_name="mobilenetv2_arcface_model")
-
-    print(f" Training complete. Best val acc = {best_val_acc:.4f}")
+    print(f"\nTraining complete. Best val acc = {best_val_acc:.4f} at epoch {best_epoch}")
 
 
 # ============================================================
-# MAIN ENTRYPOINT (Your preferred structure)
+# MAIN ENTRYPOINT
 # ============================================================
 
 if __name__ == "__main__":
-    # Get experiment id or create one
-    experiment_id = params["mlflow"].get("experiment_id")
-    if not experiment_id:
-        experiment_name = params["mlflow"].get("experiment_name", "face_embedding")
-        mlflow.set_experiment(experiment_name)
-        experiment = mlflow.get_experiment_by_name(experiment_name)
-        experiment_id = experiment.experiment_id
-        params["mlflow"]["experiment_id"] = experiment_id
-        with open("pipelines/fake_classification/params.yaml", "w", encoding="utf-8") as f:
-            yaml.safe_dump(params, f)
-    else:
-        mlflow.set_experiment(params["mlflow"].get("experiment_name", "face_embedding"))
-
-    # Start top-level run with experiment_id
-    with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as parent:
-        params["mlflow"]["run_id"] = parent.info.run_id
-        with open("pipelines/face_embedding/params.yaml", "w", encoding="utf-8") as f:
-            yaml.safe_dump(params, f)
-
-        # Nested run for training
-        with mlflow.start_run(nested=True, run_name="train_model"):
-            train_model(run_id=mlflow.active_run().info.run_id)
+    train_model()

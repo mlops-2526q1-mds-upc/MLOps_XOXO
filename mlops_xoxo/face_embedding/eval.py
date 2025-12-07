@@ -10,7 +10,7 @@ import yaml
 from dotenv import load_dotenv
 from PIL import Image
 from torchvision import transforms
-from train import MobileFace
+from mlops_xoxo.face_embedding.train import MobileFace
 
 with open("pipelines/face_embedding/params.yaml", encoding="utf-8") as f:
     params = yaml.safe_load(f)
@@ -29,6 +29,12 @@ run_name = params['mlflow'].get('run_name', 'default_run')
 
 # Device setup
 DEVICE = torch.device('mps') if getattr(torch.backends, 'mps', None) else torch.device('cpu')
+if torch.cuda.is_available():
+    DEVICE = torch.device('cuda')
+    print("Using device: CUDA")
+else:
+    DEVICE = torch.device('cpu')
+    print("Using device: CPU")
 print("Using device:", DEVICE)
 
 # Load model
