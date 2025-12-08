@@ -87,7 +87,7 @@ jobs:
               --restart unless-stopped \
               ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
 
-            - name: Start Prometheus, Grafana and Node Exporter
+      - name: Start Prometheus, Grafana and Node Exporter
         run: |
           # Stop old monitoring containers
           docker rm -f xoface-prometheus xoface-grafana xoface-node-exporter || true
