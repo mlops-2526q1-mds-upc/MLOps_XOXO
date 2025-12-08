@@ -68,10 +68,16 @@ jobs:
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
 
+      - name: Create Docker network if not exists
+        run: |
+          docker network inspect xoface-net >/dev/null 2>&1 || \
+          docker network create xoface-net
+
       - name: Start new container
         run: |
           docker run -d \
               --name xoface-api \
+              --network xoface-net \
               -p 8000:8000 \
               -v xoface-models:/app/models \
               -v xoface-dvc-config:/app/.dvc \
@@ -81,9 +87,44 @@ jobs:
               --restart unless-stopped \
               ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
 
-      - name: Start Prometheus and Grafana containers
+            - name: Start Prometheus, Grafana and Node Exporter
         run: |
-          docker compose up --build prometheus grafana
+          # Stop old monitoring containers
+          docker rm -f xoface-prometheus xoface-grafana xoface-node-exporter || true
+
+          # Create network (if missing)
+          docker network inspect xoface-net >/dev/null 2>&1 || docker network create xoface-net
+
+          # Start Prometheus
+          docker run -d \
+            --name xoface-prometheus \
+            --network xoface-net \
+            -p 9090:9090 \
+            -v /home/alumne/prometheus.yml:/etc/prometheus/prometheus.yml \
+            -v prometheus_data:/prometheus \
+            --restart unless-stopped \
+            prom/prometheus:latest \
+              --config.file=/etc/prometheus/prometheus.yml \
+              --storage.tsdb.path=/prometheus \
+              --storage.tsdb.retention.time=7d
+
+          # Start Grafana
+          docker run -d \
+            --name xoface-grafana \
+            --network xoface-net \
+            -p 3000:3000 \
+            -e GF_SECURITY_ADMIN_PASSWORD=admin \
+            -v grafana_data:/var/lib/grafana \
+            --restart unless-stopped \
+            grafana/grafana:latest
+
+          # Start Node Exporter
+          docker run -d \
+            --name xoface-node-exporter \
+            --network xoface-net \
+            -p 9100:9100 \
+            --restart unless-stopped \
+            prom/node-exporter:latest
 
       - name: Verify container is running
         run: |
