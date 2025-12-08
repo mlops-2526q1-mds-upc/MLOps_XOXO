@@ -346,5 +346,5 @@ Instrumentator().instrument(app).expose(app)
 
 # Running the app
 if __name__ == "__main__":
-    # Access at http://10.4.41.80:8000 or http://10.4.41.80:8000/docs
-    uvicorn.run("api:app", host="10.4.41.80", port=8000, reload=True, app_dir="api")
+    # Access at http://127.0.0.1:8000 or http://127.0.0.1:8000/docs
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True, app_dir="api")
