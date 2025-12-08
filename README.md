@@ -6,9 +6,14 @@
 
 ---
 
-# CasioFace MLOps pipeline (DVC + MLflow)
+# MLOps pipeline (DVC + MLflow)
 
-This repo contains a complete **face embedding training** on the CasioFace dataset (**MobileNetV2 + ArcFace**):
+This repo contains a complete pipelines for 4 face analysis task : Face Embedding, Fake Classification, Emotion Classification and Gender Age Prediction.
+
+**Face Embedding** train on the CasioFace dataset (**MobileNetV2 + ArcFace**)
+**Fake Classification** train on the Val dataset (**MobileNetV2 + ArcFace**)
+**Emotion Classification** train on the CasioFace dataset (**MobileNetV2 + ArcFace**)
+**Gender Age Prediction** train on the UTKFace dataset (**MobileNetV2 + ArcFace**)
 
 - Data ingestion
 - Data preprocessing
@@ -137,7 +142,7 @@ Edit `params.yaml` to tweak hyperparameters (batch size, lr, epochs, margin, dev
 ### 6) Run the pipeline
 
 ```bash
-make run_pipeline
+dvc repro
 ```
 
 See MLflow experiments and runs here in these link:

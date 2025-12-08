@@ -81,6 +81,10 @@ jobs:
               --restart unless-stopped \
               ${{ secrets.DOCKER_USERNAME }}/xoface-api:latest
 
+      - name: Start Prometheus and Grafana containers
+        run: |
+          docker compose up --build prometheus grafana
+
       - name: Verify container is running
         run: |
           echo "Verifying container is running..."
