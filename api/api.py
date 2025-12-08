@@ -10,6 +10,7 @@ import numpy as np
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from PIL import Image
 from torchvision import transforms
+from prometheus_fastapi_instrumentator import Instrumentator
 import torch.nn.functional as F
 import uvicorn
 
@@ -339,6 +340,9 @@ async def predict_authenticity(file: UploadFile = File(...)):
         "confidence": probs[0][pred_idx].item(),
         "is_fake": predicted_class.lower() == "fake"
     }
+
+# Prometheus Instrumentator - API exporter
+Instrumentator().instrument(app).expose(app)
 
 # Running the app
 if __name__ == "__main__":
