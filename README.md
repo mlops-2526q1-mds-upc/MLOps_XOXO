@@ -15,11 +15,19 @@ This repo contains a complete pipelines for 4 face analysis task : Face Embeddin
 **Emotion Classification** train on the CasioFace dataset (**MobileNetV2 + ArcFace**)
 **Gender Age Prediction** train on the UTKFace dataset (**MobileNetV2 + ArcFace**)
 
-- Data ingestion
-- Data preprocessing
-- Data validation
-- Model training (MobileNetV2 + ArcFace)
-- Model evaluation
+## Features
+
+- **Data pipeline**: Ingestion, preprocessing, validation with DVC
+- **Model training**: MobileNetV2 + ArcFace with MLflow tracking
+- **Model evaluation**: Comprehensive metrics and reporting
+- **Reproducibility**: DVC for data versioning and pipeline orchestration
+- **Experiment tracking**: MLflow for model versioning and metrics
+- **Containerization**: Docker and Docker Compose for easy deployment
+- **REST API**: FastAPI for model inference
+- **Web UI**: Streamlit interface for interactive predictions
+- **Monitoring**: Prometheus + Grafana for metrics and visualization
+- **CI/CD**: GitHub Actions for automated testing, training, and deployment
+- **Testing**: Pytest with coverage reports and quality checks
 
 The pipeline is reproducible with **DVC** and experiment tracking is handled with **MLflow**.
 
@@ -230,13 +238,13 @@ The REST API provides the following endpoints:
 import requests
 
 # Face embedding extraction
-url = "http://localhost:8000/predict/face_embedding"
+url = "http://10.4.41.80:8000/predict/face_embedding"
 files = {"file": open("image.jpg", "rb")}
 response = requests.post(url, files=files)
 embedding = response.json()["embedding"]
 
 # Emotion classification
-url = "http://localhost:8000/predict/emotion"
+url = "http://10.4.41.80:8000/predict/emotion"
 response = requests.post(url, files=files)
 emotion = response.json()["emotion"]
 ```
@@ -244,8 +252,8 @@ emotion = response.json()["emotion"]
 ### API Documentation
 
 Interactive API documentation is available at:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://10.4.41.80:8000/docs
+- ReDoc: http://10.4.41.80:8000/redoc
 
 ---
 
@@ -253,7 +261,7 @@ Interactive API documentation is available at:
 
 ### Prometheus Metrics
 
-The API exposes metrics at `http://localhost:8000/metrics`:
+The API exposes metrics at `http://10.4.41.80:8000/metrics`:
 
 - Request count and latency
 - Model inference time
@@ -262,7 +270,7 @@ The API exposes metrics at `http://localhost:8000/metrics`:
 
 ### Grafana Dashboards
 
-Access Grafana at http://localhost:3000 (default: admin/admin)
+Access Grafana at http://10.4.41.80:3000 (default: admin/admin)
 
 Pre-configured dashboards include:
 - API performance metrics
