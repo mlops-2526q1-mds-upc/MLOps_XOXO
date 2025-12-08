@@ -10,10 +10,10 @@
 
 This repo contains a complete pipelines for 4 face analysis task : Face Embedding, Fake Classification, Emotion Classification and Gender Age Prediction.
 
-**Face Embedding** train on the CasioFace dataset (**MobileNetV2 + ArcFace**)
-**Fake Classification** train on the Val dataset (**MobileNetV2 + ArcFace**)
-**Emotion Classification** train on the CasioFace dataset (**MobileNetV2 + ArcFace**)
-**Gender Age Prediction** train on the UTKFace dataset (**MobileNetV2 + ArcFace**)
+**Face Embedding** trains on the CasioFace dataset (**MobileNetV2 + ArcFace**)
+**Fake Classification** trains on the Val dataset (**Mobilenetv3_small  + ArcFace**)
+**Emotion Classification** trains on the CasioFace dataset (**Resnet18 + ArcFace**)
+**Gender Age Prediction** trains on the UTKFace dataset (**MobileNetV2 + ArcFace**)
 
 ## Features
 
