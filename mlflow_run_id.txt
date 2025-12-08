@@ -1,0 +1,149 @@
+[INFO] Seed set to 42
+[INFO] Model directory: models/emotion_classification
+[INFO] Report directory: reports/emotion_classification
+[INFO] MLflow experiment: emotion_classification (ID: 7)
+Using device: mps
+[INFO] Using device: mps
+[INFO] Image size: 48x48
+[INFO] Loading training data from data/processed/emotion_classification/train
+[INFO] Classes found: ['Angry', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise']
+[INFO] Number of classes: 7
+[INFO] Loading validation data from data/processed/emotion_classification/val
+[INFO] Train dataset size: 22604, Val dataset size: 4841
+[INFO] Batch size: 32
+[INFO] Building ResNet18 model with 1-channel input...
+[INFO] Starting MLflow run: emotion_classification_200_epochs
+[INFO] Logged training parameters to MLflow
+[INFO] Starting training for 50 epochs...
+Epoch 1/50 | Train Loss: 1.5132 | Train Acc: 0.4286 | Train Macro F1: 0.3321
+                 Val Acc: 0.4985 | Val Macro F1: 0.3840
+[INFO] ✓ New best model saved at epoch 1 (val_macro_f1=0.3840)
+Epoch 2/50 | Train Loss: 1.3232 | Train Acc: 0.5007 | Train Macro F1: 0.4023
+                 Val Acc: 0.5360 | Val Macro F1: 0.4281
+[INFO] ✓ New best model saved at epoch 2 (val_macro_f1=0.4281)
+Epoch 3/50 | Train Loss: 1.2779 | Train Acc: 0.5211 | Train Macro F1: 0.4290
+                 Val Acc: 0.4987 | Val Macro F1: 0.4053
+Epoch 4/50 | Train Loss: 1.2343 | Train Acc: 0.5351 | Train Macro F1: 0.4453
+                 Val Acc: 0.4807 | Val Macro F1: 0.3810
+Epoch 5/50 | Train Loss: 1.2226 | Train Acc: 0.5421 | Train Macro F1: 0.4541
+                 Val Acc: 0.5524 | Val Macro F1: 0.4774
+[INFO] ✓ New best model saved at epoch 5 (val_macro_f1=0.4774)
+Epoch 6/50 | Train Loss: 1.1572 | Train Acc: 0.5647 | Train Macro F1: 0.4769
+                 Val Acc: 0.5631 | Val Macro F1: 0.4819
+[INFO] ✓ New best model saved at epoch 6 (val_macro_f1=0.4819)
+Epoch 7/50 | Train Loss: 1.1398 | Train Acc: 0.5740 | Train Macro F1: 0.4895
+                 Val Acc: 0.5096 | Val Macro F1: 0.4214
+Epoch 8/50 | Train Loss: 1.1628 | Train Acc: 0.5691 | Train Macro F1: 0.4894
+                 Val Acc: 0.5606 | Val Macro F1: 0.4858
+[INFO] ✓ New best model saved at epoch 8 (val_macro_f1=0.4858)
+Epoch 9/50 | Train Loss: 1.0998 | Train Acc: 0.5911 | Train Macro F1: 0.5173
+                 Val Acc: 0.5738 | Val Macro F1: 0.4863
+[INFO] ✓ New best model saved at epoch 9 (val_macro_f1=0.4863)
+Epoch 10/50 | Train Loss: 1.0765 | Train Acc: 0.5996 | Train Macro F1: 0.5342
+                 Val Acc: 0.5786 | Val Macro F1: 0.5001
+[INFO] ✓ New best model saved at epoch 10 (val_macro_f1=0.5001)
+Epoch 11/50 | Train Loss: 1.0430 | Train Acc: 0.6111 | Train Macro F1: 0.5474
+                 Val Acc: 0.5935 | Val Macro F1: 0.5306
+[INFO] ✓ New best model saved at epoch 11 (val_macro_f1=0.5306)
+Epoch 12/50 | Train Loss: 1.0331 | Train Acc: 0.6131 | Train Macro F1: 0.5517
+                 Val Acc: 0.5854 | Val Macro F1: 0.5086
+Epoch 13/50 | Train Loss: 1.0130 | Train Acc: 0.6207 | Train Macro F1: 0.5695
+                 Val Acc: 0.5873 | Val Macro F1: 0.5408
+[INFO] ✓ New best model saved at epoch 13 (val_macro_f1=0.5408)
+Epoch 14/50 | Train Loss: 1.0148 | Train Acc: 0.6194 | Train Macro F1: 0.5626
+                 Val Acc: 0.5621 | Val Macro F1: 0.4965
+Epoch 15/50 | Train Loss: 1.0513 | Train Acc: 0.6106 | Train Macro F1: 0.5597
+                 Val Acc: 0.6015 | Val Macro F1: 0.5539
+[INFO] ✓ New best model saved at epoch 15 (val_macro_f1=0.5539)
+Epoch 16/50 | Train Loss: 0.9651 | Train Acc: 0.6376 | Train Macro F1: 0.5882
+                 Val Acc: 0.5999 | Val Macro F1: 0.5570
+[INFO] ✓ New best model saved at epoch 16 (val_macro_f1=0.5570)
+Epoch 17/50 | Train Loss: 0.9572 | Train Acc: 0.6450 | Train Macro F1: 0.6027
+                 Val Acc: 0.6061 | Val Macro F1: 0.5543
+Epoch 18/50 | Train Loss: 0.9329 | Train Acc: 0.6482 | Train Macro F1: 0.6080
+                 Val Acc: 0.6036 | Val Macro F1: 0.5639
+[INFO] ✓ New best model saved at epoch 18 (val_macro_f1=0.5639)
+Epoch 19/50 | Train Loss: 0.9243 | Train Acc: 0.6527 | Train Macro F1: 0.6134
+                 Val Acc: 0.6232 | Val Macro F1: 0.5876
+[INFO] ✓ New best model saved at epoch 19 (val_macro_f1=0.5876)
+Epoch 20/50 | Train Loss: 0.9014 | Train Acc: 0.6649 | Train Macro F1: 0.6292
+                 Val Acc: 0.5974 | Val Macro F1: 0.5622
+Epoch 21/50 | Train Loss: 0.8991 | Train Acc: 0.6671 | Train Macro F1: 0.6302
+                 Val Acc: 0.6098 | Val Macro F1: 0.5685
+Epoch 22/50 | Train Loss: 0.9054 | Train Acc: 0.6659 | Train Macro F1: 0.6301
+                 Val Acc: 0.6183 | Val Macro F1: 0.5812
+Epoch 23/50 | Train Loss: 0.8193 | Train Acc: 0.6970 | Train Macro F1: 0.6711
+                 Val Acc: 0.6304 | Val Macro F1: 0.5989
+[INFO] ✓ New best model saved at epoch 23 (val_macro_f1=0.5989)
+Epoch 24/50 | Train Loss: 0.7914 | Train Acc: 0.7045 | Train Macro F1: 0.6793
+                 Val Acc: 0.6364 | Val Macro F1: 0.5970
+Epoch 25/50 | Train Loss: 0.7699 | Train Acc: 0.7151 | Train Macro F1: 0.6920
+                 Val Acc: 0.6300 | Val Macro F1: 0.5983
+Epoch 26/50 | Train Loss: 0.7586 | Train Acc: 0.7173 | Train Macro F1: 0.6980
+                 Val Acc: 0.6253 | Val Macro F1: 0.5863
+Epoch 27/50 | Train Loss: 0.7118 | Train Acc: 0.7323 | Train Macro F1: 0.7126
+                 Val Acc: 0.6379 | Val Macro F1: 0.6005
+[INFO] ✓ New best model saved at epoch 27 (val_macro_f1=0.6005)
+Epoch 28/50 | Train Loss: 0.6872 | Train Acc: 0.7437 | Train Macro F1: 0.7277
+                 Val Acc: 0.6335 | Val Macro F1: 0.6034
+[INFO] ✓ New best model saved at epoch 28 (val_macro_f1=0.6034)
+Epoch 29/50 | Train Loss: 0.6710 | Train Acc: 0.7486 | Train Macro F1: 0.7329
+                 Val Acc: 0.6383 | Val Macro F1: 0.6086
+[INFO] ✓ New best model saved at epoch 29 (val_macro_f1=0.6086)
+Epoch 30/50 | Train Loss: 0.6662 | Train Acc: 0.7513 | Train Macro F1: 0.7401
+                 Val Acc: 0.6400 | Val Macro F1: 0.6103
+[INFO] ✓ New best model saved at epoch 30 (val_macro_f1=0.6103)
+Epoch 31/50 | Train Loss: 0.6471 | Train Acc: 0.7592 | Train Macro F1: 0.7472
+                 Val Acc: 0.6391 | Val Macro F1: 0.6148
+[INFO] ✓ New best model saved at epoch 31 (val_macro_f1=0.6148)
+Epoch 32/50 | Train Loss: 0.6361 | Train Acc: 0.7614 | Train Macro F1: 0.7503
+                 Val Acc: 0.6364 | Val Macro F1: 0.6061
+Epoch 33/50 | Train Loss: 0.6250 | Train Acc: 0.7681 | Train Macro F1: 0.7584
+                 Val Acc: 0.6323 | Val Macro F1: 0.6063
+Epoch 34/50 | Train Loss: 0.6140 | Train Acc: 0.7710 | Train Macro F1: 0.7615
+                 Val Acc: 0.6342 | Val Macro F1: 0.5997
+Epoch 35/50 | Train Loss: 0.5927 | Train Acc: 0.7803 | Train Macro F1: 0.7679
+                 Val Acc: 0.6377 | Val Macro F1: 0.6082
+Epoch 36/50 | Train Loss: 0.5743 | Train Acc: 0.7883 | Train Macro F1: 0.7797
+                 Val Acc: 0.6435 | Val Macro F1: 0.6187
+[INFO] ✓ New best model saved at epoch 36 (val_macro_f1=0.6187)
+Epoch 37/50 | Train Loss: 0.5692 | Train Acc: 0.7863 | Train Macro F1: 0.7833
+                 Val Acc: 0.6402 | Val Macro F1: 0.6129
+Epoch 38/50 | Train Loss: 0.5635 | Train Acc: 0.7896 | Train Macro F1: 0.7831
+                 Val Acc: 0.6387 | Val Macro F1: 0.6126
+Epoch 39/50 | Train Loss: 0.5523 | Train Acc: 0.7954 | Train Macro F1: 0.7862
+                 Val Acc: 0.6383 | Val Macro F1: 0.6131
+Epoch 40/50 | Train Loss: 0.5369 | Train Acc: 0.8016 | Train Macro F1: 0.7953
+                 Val Acc: 0.6373 | Val Macro F1: 0.6092
+Epoch 41/50 | Train Loss: 0.5259 | Train Acc: 0.8060 | Train Macro F1: 0.8013
+                 Val Acc: 0.6406 | Val Macro F1: 0.6154
+Epoch 42/50 | Train Loss: 0.5192 | Train Acc: 0.8070 | Train Macro F1: 0.8009
+                 Val Acc: 0.6389 | Val Macro F1: 0.6141
+Epoch 43/50 | Train Loss: 0.5112 | Train Acc: 0.8133 | Train Macro F1: 0.8058
+                 Val Acc: 0.6383 | Val Macro F1: 0.6135
+Epoch 44/50 | Train Loss: 0.5207 | Train Acc: 0.8062 | Train Macro F1: 0.7999
+                 Val Acc: 0.6422 | Val Macro F1: 0.6177
+Epoch 45/50 | Train Loss: 0.5130 | Train Acc: 0.8104 | Train Macro F1: 0.8007
+                 Val Acc: 0.6424 | Val Macro F1: 0.6150
+Epoch 46/50 | Train Loss: 0.5083 | Train Acc: 0.8139 | Train Macro F1: 0.8095
+                 Val Acc: 0.6416 | Val Macro F1: 0.6151
+Epoch 47/50 | Train Loss: 0.5049 | Train Acc: 0.8094 | Train Macro F1: 0.8038
+                 Val Acc: 0.6416 | Val Macro F1: 0.6141
+Epoch 48/50 | Train Loss: 0.5066 | Train Acc: 0.8126 | Train Macro F1: 0.8056
+                 Val Acc: 0.6412 | Val Macro F1: 0.6153
+Epoch 49/50 | Train Loss: 0.5042 | Train Acc: 0.8135 | Train Macro F1: 0.8061
+                 Val Acc: 0.6437 | Val Macro F1: 0.6182
+Epoch 50/50 | Train Loss: 0.4984 | Train Acc: 0.8166 | Train Macro F1: 0.8105
+                 Val Acc: 0.6424 | Val Macro F1: 0.6160
+[INFO] Training complete!
+[INFO] Loading best model from models/emotion_classification/best_model.pth
+[INFO] Saved test metrics to reports/emotion_classification/test_metrics_20251208_014813.json
+[INFO] Final validation accuracy: 0.6435
+[INFO] Final validation macro F1: 0.6187
+[INFO] Uploading model and artifacts to MLflow...
+[INFO] ✓ Model uploaded to MLflow
+[INFO] ✓ Test metrics uploaded to MLflow
+[INFO] ✅ Training complete and all artifacts logged to MLflow!
+[INFO] Best model achieved val_macro_f1=0.6187 at epoch 36
+🏃 View run emotion_classification_200_epochs at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/7/runs/b10c74b410e74293a7bc62c941f498cc
+🧪 View experiment at: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow/#/experiments/7

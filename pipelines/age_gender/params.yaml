@@ -23,7 +23,7 @@ storage:
   dvc_remote: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.dvc
 training:
   batch_size: 16
-  num_epochs: 1
+  num_epochs: 50
   learning_rate: 0.001
   device: mps
 model:

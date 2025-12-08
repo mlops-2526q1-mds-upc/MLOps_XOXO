@@ -63,16 +63,16 @@ stages:
       nfiles: 22604
     - path: mlops_xoxo/emotion_classification/train.py
       hash: md5
-      md5: d21a12d6b4f7595cfc24e4b274e8fb14
-      size: 12813
+      md5: e8e38b95d6a3bc75090cae931190a4f6
+      size: 12766
     - path: pipelines/emotion_classification/params.yaml
       hash: md5
-      md5: b2da20301c7b68b902d57de135f198a2
-      size: 671
+      md5: cc29b41c794b113f9d84e0daed416904
+      size: 672
     params:
       pipelines/emotion_classification/params.yaml:
         training:
-          epochs: 1
+          epochs: 50
           batch_size: 32
           device: mps
           lr: 0.001
@@ -82,13 +82,13 @@ stages:
     outs:
     - path: models/emotion_classification
       hash: md5
-      md5: fb1a36a9640bc259f84737c617dfd076.dir
+      md5: 26566ef231ac07ef7cd0af1b5393dc36.dir
       size: 178988560
       nfiles: 2
     - path: reports/emotion_classification/emissions.csv
       hash: md5
-      md5: 8c37115999522dcce3280778eed96bd0
-      size: 787
+      md5: 89de11b5a42e8d2d1537f6fc2a4e78a2
+      size: 803
   eval:
     cmd: python mlops_xoxo/emotion_classification/eval.py
     deps:
@@ -103,19 +103,19 @@ stages:
       size: 5306
     - path: models/emotion_classification
       hash: md5
-      md5: fb1a36a9640bc259f84737c617dfd076.dir
+      md5: 26566ef231ac07ef7cd0af1b5393dc36.dir
       size: 178988560
       nfiles: 2
     - path: pipelines/emotion_classification/params.yaml
       hash: md5
-      md5: b2da20301c7b68b902d57de135f198a2
-      size: 671
+      md5: cc29b41c794b113f9d84e0daed416904
+      size: 672
     outs:
     - path: reports/emotion_classification/eval_metrics.json
       hash: md5
-      md5: 914820dda9bcb59aa3530d402859c835
-      size: 1487
+      md5: 9183c4f6b87fc046079aaca13a06d488
+      size: 1490
     - path: reports/emotion_classification/eval_summary.txt
       hash: md5
-      md5: c2e1ad1fcca6af4eec74ca86f7f1362f
+      md5: f8ed478dcfad63212feb85cbe47d3afc
       size: 596

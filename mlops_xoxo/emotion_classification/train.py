@@ -22,7 +22,7 @@ from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classifi
 from torchvision.models import resnet18, ResNet18_Weights
 
 import mlflow
-from .train_util import (
+from train_util import (
     prepare_output_dirs,
     init_mlflow,
     log_params_mlflow,
@@ -121,7 +121,7 @@ def main():
     mlflow.set_experiment(experiment_name)
     print(f"[INFO] MLflow experiment: {experiment_name} (ID: {experiment_id})")
 
-    device = get_device(params.get('training', {}).get('device', 'cpu'))
+    device = get_device()
     print(f"[INFO] Using device: {device}")
 
     img_size = params.get('preprocessing', {}).get('image_size', 48)

@@ -9,7 +9,7 @@ dataset:
 mlflow:
   experiment_id: '5'
   experiment_name: fake_classification
-  run_id: f401ce1f88d44fe5a5c47a2a1a61b344
+  run_id: 83d7dafb82db4b08bed46cea90dda84b
   run_name: fake_classification_3_epochs
   tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
 preprocessing:
@@ -22,7 +22,7 @@ training:
   backbone: mobilenet_v3_small
   batch_size: 64
   device: mps
-  epochs: 3
+  epochs: 100
   export_onnx: 1
   freeze_backbone: true
   lr: 0.001

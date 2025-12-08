@@ -91,7 +91,7 @@ stages:
           backbone: mobilenet_v3_small
           batch_size: 64
           device: mps
-          epochs: 3
+          epochs: 100
           export_onnx: 1
           freeze_backbone: true
           lr: 0.001
@@ -100,8 +100,8 @@ stages:
     outs:
     - path: models/fake_classification/
       hash: md5
-      md5: bc50b37bb313f06b6cfd2507f2e0466d.dir
-      size: 12422556
+      md5: 072360a18834909df8630efd1f32aea1.dir
+      size: 12427236
       nfiles: 6
   eval:
     cmd: python mlops_xoxo/fake_classification/eval.py
@@ -117,20 +117,20 @@ stages:
       size: 6781
     - path: models/fake_classification/
       hash: md5
-      md5: bc50b37bb313f06b6cfd2507f2e0466d.dir
-      size: 12422556
+      md5: 072360a18834909df8630efd1f32aea1.dir
+      size: 12427236
       nfiles: 6
     params:
       pipelines/fake_classification/params.yaml:
         mlflow:
           experiment_id: '5'
           experiment_name: fake_classification
-          run_id: f401ce1f88d44fe5a5c47a2a1a61b344
+          run_id: 83d7dafb82db4b08bed46cea90dda84b
           run_name: fake_classification_3_epochs
           tracking_uri: https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
     outs:
     - path: reports/fake_classification/
       hash: md5
-      md5: db1accd7e1da63d3c570462fa3e29f50.dir
-      size: 228
+      md5: 06e39dc5f3f6bcb7fcbb63c5bf853b3b.dir
+      size: 225
       nfiles: 2

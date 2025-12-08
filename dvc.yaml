@@ -1,6 +1,6 @@
 stages:
-  face_embedding_pipeline:
-    cmd: dvc repro pipelines/face_embedding/dvc.yaml
+  #face_embedding_pipeline:
+  #cmd: dvc repro pipelines/face_embedding/dvc.yaml
 
   fake_classification_pipeline:
     cmd: dvc repro pipelines/fake_classification/dvc.yaml
