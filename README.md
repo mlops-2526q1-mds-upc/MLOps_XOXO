@@ -148,3 +148,239 @@ dvc repro
 See MLflow experiments and runs here in these link:
 
 https://dagshub.com/pawarit.jamjod/MLOps_XOXO.mlflow
+
+---
+
+## 2. Docker Deployment (Recommended for Production)
+
+### Quick Start with Docker Compose
+
+```bash
+# Build and start all services (API + UI + Monitoring)
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+
+### Docker Services
+
+The `docker-compose.yml` includes:
+
+1. **API Service**: FastAPI server with model inference
+2. **UI Service**: Streamlit web interface
+3. **Prometheus**: Metrics collection and monitoring
+4. **Grafana**: Visualization dashboards
+5. **Node Exporter**: Hardware metrics (CPU/RAM)
+
+### Model Download Options
+
+Models are automatically downloaded when the container starts if DVC credentials are provided:
+
+**Option 1: Using environment variables**
+```bash
+export DVC_USER=your_username
+export DVC_PASSWORD=your_password
+docker-compose up -d
+```
+
+**Option 2: Using DVC config file**
+The `docker-compose.yml` already mounts `.dvc/config.local` if it exists.
+
+**Option 3: Manual download before Docker**
+```bash
+# Download models locally first
+dvc pull
+
+# Models will be available in persistent volume
+docker-compose up -d
+```
+
+### Persistent Volumes
+
+Docker uses persistent volumes for:
+- **xoface-models**: ML models (persist between restarts)
+- **xoface-dvc-config**: DVC configuration
+- **prometheus_data**: Prometheus metrics history
+- **grafana_data**: Grafana dashboards
+
+
+---
+
+## 3. API Usage
+
+### FastAPI Endpoints
+
+The REST API provides the following endpoints:
+
+- `POST /predict/face_embedding`: Extract face embeddings
+- `POST /predict/emotion`: Classify emotions
+- `POST /predict/age_gender`: Predict age and gender
+- `POST /predict/fake_detection`: Detect fake/real faces
+- `GET /health`: Health check
+- `GET /models/status`: Check loaded models
+
+### Example API Request
+
+```python
+import requests
+
+# Face embedding extraction
+url = "http://localhost:8000/predict/face_embedding"
+files = {"file": open("image.jpg", "rb")}
+response = requests.post(url, files=files)
+embedding = response.json()["embedding"]
+
+# Emotion classification
+url = "http://localhost:8000/predict/emotion"
+response = requests.post(url, files=files)
+emotion = response.json()["emotion"]
+```
+
+### API Documentation
+
+Interactive API documentation is available at:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+---
+
+## 4. Monitoring and Observability
+
+### Prometheus Metrics
+
+The API exposes metrics at `http://localhost:8000/metrics`:
+
+- Request count and latency
+- Model inference time
+- Error rates
+- Hardware metrics (CPU, RAM)
+
+### Grafana Dashboards
+
+Access Grafana at http://localhost:3000 (default: admin/admin)
+
+Pre-configured dashboards include:
+- API performance metrics
+- Model inference latency
+- System resource usage
+- Request rates and error tracking
+
+### Configuration
+
+Prometheus configuration is in `prometheus.yml`:
+```yaml
+scrape_configs:
+  - job_name: 'xoface-api'
+    static_configs:
+      - targets: ['api:8000']
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+```
+
+---
+
+## 5. CI/CD Pipelines
+
+### GitHub Actions Workflows
+
+The project includes three main workflows:
+
+#### 1. CI Pipeline (`.github/workflows/CI-action.yaml`)
+
+Runs on every push and pull request:
+
+- **Code Quality Checks**:
+  - Black formatting
+  - Flake8 linting
+  - Bandit security scan
+
+- **DVC Validation**:
+  - YAML syntax validation
+  - DVC pipeline consistency
+  - Remote connection tests
+
+- **Unit Tests**:
+  - Face embedding tests with pytest
+  - Coverage reports
+  - Model validation
+
+#### 2. CD Training (`.github/workflows/CD-train.yaml`)
+
+Automated model training and deployment:
+
+- Downloads data from DVC
+- Trains face embedding model (2 epochs for CI)
+- Pushes trained model back to DVC
+- Tracks experiments in MLflow
+
+#### 3. CD Deployment (`.github/workflows/CD-deploy.yaml`)
+
+Automated deployment to production:
+
+- Builds Docker images
+- Pushes to Docker Hub
+- Deploys to self-hosted runner (VM)
+- Starts monitoring stack (Prometheus + Grafana)
+- Health checks and verification
+
+### Self-Hosted Runner Setup
+
+For the deployment workflow, configure a self-hosted GitHub Actions runner on your VM:
+
+```bash
+# On your VM
+cd ~/actions-runner
+./config.sh --url https://github.com/your-org/MLOps_XOXO --token YOUR_TOKEN
+./run.sh
+```
+
+### Required GitHub Secrets
+
+Configure these secrets in your repository settings:
+
+- `DAGSHUB_DVC_USER`: DagsHub username
+- `DAGSHUB_DVC_PASS`: DagsHub password
+- `DOCKER_USERNAME`: Docker Hub username
+- `DOCKER_PASSWORD`: Docker Hub password/token
+
+---
+
+## 6. Testing
+
+### Run Tests Locally
+
+```bash
+# Install test dependencies
+pip install pytest pytest-cov
+
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=mlops_xoxo --cov-report=html
+
+# Run specific test suite
+pytest test_face_embedding/ -v
+```
+
+### Test Structure
+
+```
+test_face_embedding/
+├── conftest.py           # Test fixtures
+├── test_api.py          # API endpoint tests
+├── test_data_ingest.py  # Data ingestion tests
+├── test_data_split.py   # Data splitting tests
+├── test_data_utils.py   # Utility function tests
+├── test_data_validate.py # Data validation tests
+├── test_model.py        # Model architecture tests
+└── test_train.py        # Training pipeline tests
+```
+
+---
